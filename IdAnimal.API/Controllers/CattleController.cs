@@ -9,11 +9,11 @@ namespace IdAnimal.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class CattleController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly ICloudStorageService _cloudStorage;
-    private const int DefaultUserId = 1; // Since we removed auth, use a default user
 
     public CattleController(AppDbContext context, ICloudStorageService cloudStorage)
     {
@@ -21,9 +21,20 @@ public class CattleController : ControllerBase
         _cloudStorage = cloudStorage;
     }
 
-    [HttpGet]
-    public async Task<ActionResult<List<CattleDto>>> GetAll([FromQuery] int? establishmentId = null, [FromQuery] int? userId = null)
+    private int GetCurrentUserId()
     {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(userIdClaim, out int userId))
+        {
+            return userId;
+        }
+        throw new UnauthorizedAccessException("Invalid token: User ID missing.");
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<List<CattleDto>>> GetAll([FromQuery] int? establishmentId = null)
+    {
+        var userId = GetCurrentUserId();
         var query = _context.Cattle
             .Include(c => c.Establishment)
             .Include(c => c.Images)
@@ -70,7 +81,7 @@ public class CattleController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<CattleDetailDto>> GetById(int id)
     {
-        var userId = DefaultUserId;
+        var userId = GetCurrentUserId();
         var cattle = await _context.Cattle
             .Include(c => c.Establishment)
             .Include(c => c.Images)
@@ -128,7 +139,7 @@ public class CattleController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<CattleDto>> Create([FromBody] CattleDto dto)
     {
-        var userId = DefaultUserId;
+        var userId = GetCurrentUserId();
         var establishment = await _context.Establishments
             .FirstOrDefaultAsync(e => e.Id == dto.EstablishmentId && e.UserId == userId);
 
@@ -167,7 +178,7 @@ public class CattleController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] CattleDto dto)
     {
-        var userId = DefaultUserId;
+        var userId = GetCurrentUserId();;
         var cattle = await _context.Cattle
             .Include(c => c.Establishment)
             .FirstOrDefaultAsync(c => c.Id == id && c.Establishment!.UserId == userId);
@@ -199,7 +210,7 @@ public class CattleController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var userId = DefaultUserId;
+        var userId = GetCurrentUserId();
         var cattle = await _context.Cattle
             .Include(c => c.Establishment)
             .FirstOrDefaultAsync(c => c.Id == id && c.Establishment!.UserId == userId);
@@ -218,7 +229,7 @@ public class CattleController : ControllerBase
     [HttpPost("upload-image")]
     public async Task<IActionResult> UploadImage([FromBody] UploadImageRequest request)
     {
-        var userId = DefaultUserId;
+        var userId = GetCurrentUserId();
         var cattle = await _context.Cattle
             .Include(c => c.Establishment)
             .FirstOrDefaultAsync(c => c.Id == request.CattleId && c.Establishment!.UserId == userId);
