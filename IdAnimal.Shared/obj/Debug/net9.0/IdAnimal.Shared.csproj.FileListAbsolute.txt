@@ -1,0 +1,11 @@
+C:\REPOS\IDANIMAL\IdAnimal.Backend\IdAnimal.Shared\bin\Debug\net9.0\IdAnimal.Shared.deps.json
+C:\REPOS\IDANIMAL\IdAnimal.Backend\IdAnimal.Shared\bin\Debug\net9.0\IdAnimal.Shared.dll
+C:\REPOS\IDANIMAL\IdAnimal.Backend\IdAnimal.Shared\bin\Debug\net9.0\IdAnimal.Shared.pdb
+C:\REPOS\IDANIMAL\IdAnimal.Backend\IdAnimal.Shared\obj\Debug\net9.0\IdAnimal.Shared.GeneratedMSBuildEditorConfig.editorconfig
+C:\REPOS\IDANIMAL\IdAnimal.Backend\IdAnimal.Shared\obj\Debug\net9.0\IdAnimal.Shared.AssemblyInfoInputs.cache
+C:\REPOS\IDANIMAL\IdAnimal.Backend\IdAnimal.Shared\obj\Debug\net9.0\IdAnimal.Shared.AssemblyInfo.cs
+C:\REPOS\IDANIMAL\IdAnimal.Backend\IdAnimal.Shared\obj\Debug\net9.0\IdAnimal.Shared.csproj.CoreCompileInputs.cache
+C:\REPOS\IDANIMAL\IdAnimal.Backend\IdAnimal.Shared\obj\Debug\net9.0\IdAnimal.Shared.dll
+C:\REPOS\IDANIMAL\IdAnimal.Backend\IdAnimal.Shared\obj\Debug\net9.0\refint\IdAnimal.Shared.dll
+C:\REPOS\IDANIMAL\IdAnimal.Backend\IdAnimal.Shared\obj\Debug\net9.0\IdAnimal.Shared.pdb
+C:\REPOS\IDANIMAL\IdAnimal.Backend\IdAnimal.Shared\obj\Debug\net9.0\ref\IdAnimal.Shared.dll

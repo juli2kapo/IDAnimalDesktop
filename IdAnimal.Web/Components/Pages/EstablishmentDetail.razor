@@ -1,0 +1,742 @@
+@page "/establishments/{Id:int}"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using IdAnimal.Shared.DTOs
+@using IdAnimal.Web.Services
+@inject EstablishmentService EstablishmentService
+@inject CattleService CattleService
+@inject NavigationManager Navigation
+
+<PageTitle>Detalle del Establecimiento - IdAnimal</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <button class="btn btn-secondary" @onclick="GoBack">
+            <i class="bi bi-arrow-left"></i> Volver
+        </button>
+        <div class="header-actions">
+            <button class="btn btn-primary" @onclick="ShowEditModal">
+                <i class="bi bi-pencil"></i> Editar
+            </button>
+            <button class="btn btn-danger" @onclick="ShowDeleteConfirm">
+                <i class="bi bi-trash"></i> Eliminar
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" aria-label="Close" @onclick="CloseErrorMessage"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @successMessage
+            <button type="button" class="btn-close" aria-label="Close" @onclick="CloseSuccessMessage"></button>
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="text-center mt-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (establishment == null)
+    {
+        <div class="alert alert-danger">
+            No se encontró el establecimiento solicitado.
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <!-- Main Info Card -->
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h2 class="establishment-title">
+                            <i class="bi bi-building"></i> @establishment.Name
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="detail-label">Provincia</label>
+                                <p class="detail-value">
+                                    <i class="bi bi-geo-alt"></i> @(establishment.Province ?? "No especificada")
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="detail-label">Código Postal</label>
+                                <p class="detail-value">
+                                    <i class="bi bi-mailbox"></i> @(establishment.PostalCode ?? "No especificado")
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="detail-label">RENSPA</label>
+                                <p class="detail-value">
+                                    <i class="bi bi-file-text"></i> @(establishment.Renspa ?? "No especificado")
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="detail-label">Cantidad de Ganado</label>
+                                <p class="detail-value">
+                                    <i class="bi bi-tag"></i> @establishment.CattleCount cabezas
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="detail-label">Fecha de Registro</label>
+                                <p class="detail-value">
+                                    <i class="bi bi-calendar"></i> @establishment.RegisterDate.ToString("dd/MM/yyyy")
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="detail-label">Fecha de Registro del Establecimiento</label>
+                                <p class="detail-value">
+                                    <i class="bi bi-calendar-check"></i> @establishment.EstablishmentRegisterDate.ToString("dd/MM/yyyy")
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Sidebar -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="bi bi-bar-chart"></i> Estadísticas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="stat-item">
+                            <div class="stat-icon">
+                                <i class="bi bi-tag-fill"></i>
+                            </div>
+                            <div class="stat-info">
+                                <div class="stat-label">Total de Ganado</div>
+                                <div class="stat-value">@establishment.CattleCount</div>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">
+                                <i class="bi bi-calendar3"></i>
+                            </div>
+                            <div class="stat-info">
+                                <div class="stat-label">Años de Operación</div>
+                                <div class="stat-value">@GetYearsOfOperation()</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-info-circle"></i> Información</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-secondary" style="font-size: 14px;">
+                            Este establecimiento está registrado en el sistema IdAnimal desde el @establishment.RegisterDate.ToString("dd/MM/yyyy").
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cattle List -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-tag"></i> Ganado Registrado (@cattleList.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (loadingCattle)
+                        {
+                            <div class="text-center py-4">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Cargando ganado...</span>
+                                </div>
+                            </div>
+                        }
+                        else if (cattleList.Count == 0)
+                        {
+                            <div class="empty-state-small">
+                                <i class="bi bi-tag empty-state-icon"></i>
+                                <p>No hay ganado registrado en este establecimiento</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="cattle-grid-small">
+                                @foreach (var cattle in cattleList)
+                                {
+                                    <div class="cattle-card-small" @onclick="() => NavigateToCattleDetail(cattle.Id)">
+                                        <div class="cattle-card-header">
+                                            <strong>@cattle.Caravan</strong>
+                                        </div>
+                                        <div class="cattle-card-body">
+                                            <div class="cattle-info-item">
+                                                <i class="bi bi-gender-ambiguous"></i>
+                                                <span>@(cattle.Gender ?? "N/A")</span>
+                                            </div>
+                                            <div class="cattle-info-item">
+                                                <i class="bi bi-speedometer"></i>
+                                                <span>@(cattle.Weight?.ToString() ?? "N/A") kg</span>
+                                            </div>
+                                            <div class="cattle-info-item">
+                                                <i class="bi bi-geo-alt"></i>
+                                                <span>@(cattle.Origin ?? "N/A")</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (showEditModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Establecimiento</h5>
+                    <button type="button" class="btn-close" @onclick="HideEditModal"></button>
+                </div>
+                <EditForm Model="@establishment" OnValidSubmit="@UpdateEstablishment">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nombre *</label>
+                                <InputText class="form-control" @bind-Value="establishment.Name" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Provincia *</label>
+                                <InputText class="form-control" @bind-Value="establishment.Province" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Código Postal</label>
+                                <InputText class="form-control" @bind-Value="establishment.PostalCode" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">RENSPA</label>
+                                <InputText class="form-control" @bind-Value="establishment.Renspa" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="HideEditModal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                            @if (isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm"></span>
+                            }
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (showDeleteConfirmModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" @onclick="() => showDeleteConfirmModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro que desea eliminar el establecimiento "<strong>@establishment?.Name</strong>"?</p>
+                    @if (establishment?.CattleCount > 0)
+                    {
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Este establecimiento tiene @establishment.CattleCount cabeza(s) de ganado registradas.
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => showDeleteConfirmModal = false">Cancelar</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteEstablishment" disabled="@isSaving">
+                        @if (isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm"></span>
+                        }
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+<style>
+    .page-container {
+        padding: 25px;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .establishment-title {
+        color: var(--accent-orange);
+        font-size: 28px;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    .detail-label {
+        color: var(--text-secondary);
+        font-size: 12px;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 5px;
+        display: block;
+    }
+
+    .detail-value {
+        color: var(--text-primary);
+        font-size: 16px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .detail-value i {
+        color: var(--accent-orange);
+        font-size: 18px;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        background-color: var(--accent-orange);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+    }
+
+    .stat-icon i {
+        color: white;
+        font-size: 24px;
+    }
+
+    .stat-info {
+        flex: 1;
+    }
+
+    .stat-label {
+        color: var(--text-secondary);
+        font-size: 12px;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    .stat-value {
+        color: var(--text-primary);
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    .modal {
+        background: var(--modal-backdrop);
+    }
+
+    .modal-backdrop {
+        background-color: var(--modal-backdrop);
+    }
+
+    /* Modal content and alert styles */
+    .modal-content {
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .modal-header,
+    .modal-footer {
+        border-color: var(--border-color) !important;
+    }
+
+    .modal-title {
+        color: var(--text-primary) !important;
+    }
+
+    .alert {
+        border-radius: var(--border-radius-sm) !important;
+    }
+
+    .alert-danger {
+        background-color: #DC3545 !important;
+        color: white !important;
+        border: none !important;
+    }
+
+    .alert-success {
+        background-color: var(--primary-green) !important;
+        color: white !important;
+        border: none !important;
+    }
+
+    .alert-warning {
+        background-color: var(--primary-orange) !important;
+        color: white !important;
+        border: none !important;
+    }
+
+    .text-secondary {
+        color: var(--text-secondary) !important;
+    }
+
+    /* Card styles override */
+    .card {
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .card-header h5 {
+        color: var(--text-primary) !important;
+    }
+
+    /* Cattle Grid */
+    .cattle-grid-small {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .cattle-card-small {
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        padding: 15px;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: 1px solid var(--border-color);
+    }
+
+    .cattle-card-small:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(255, 142, 60, 0.2);
+        border-color: var(--accent-orange);
+    }
+
+    .cattle-card-header {
+        color: var(--accent-orange);
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .cattle-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .cattle-info-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-primary);
+        font-size: 14px;
+    }
+
+    .cattle-info-item i {
+        color: var(--accent-orange);
+        font-size: 16px;
+        width: 20px;
+    }
+
+    .empty-state-small {
+        text-align: center;
+        padding: 40px 20px;
+    }
+
+    .empty-state-small p {
+        color: var(--text-secondary);
+        margin-top: 10px;
+        margin-bottom: 0;
+    }
+
+    .empty-state-icon {
+        font-size: 36px;
+        color: var(--accent-orange);
+    }
+</style>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private EstablishmentDto? establishment;
+    private List<CattleDto> cattleList = new();
+    private bool isLoading = true;
+    private bool loadingCattle = false;
+    private bool isSaving = false;
+    private bool showEditModal = false;
+    private bool showDeleteConfirmModal = false;
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine($"[EstablishmentDetail] OnInitializedAsync called for establishment ID: {Id}");
+        await LoadEstablishment();
+        await LoadCattle();
+    }
+
+    private async Task LoadEstablishment()
+    {
+        isLoading = true;
+        Console.WriteLine($"[EstablishmentDetail] LoadEstablishment started for ID: {Id}");
+
+        try
+        {
+            Console.WriteLine($"[EstablishmentDetail] Calling EstablishmentService.GetByIdAsync({Id})");
+            establishment = await EstablishmentService.GetByIdAsync(Id);
+
+            if (establishment != null)
+            {
+                Console.WriteLine($"[EstablishmentDetail] Successfully received data for establishment: {establishment.Name}");
+            }
+            else
+            {
+                Console.WriteLine($"[EstablishmentDetail] API returned null for establishment ID: {Id}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[EstablishmentDetail] Exception in LoadEstablishment: {ex.GetType().Name} - {ex.Message}");
+            errorMessage = "Error al cargar los datos. Mostrando datos de ejemplo.";
+            establishment = GetMockEstablishment(Id);
+            Console.WriteLine($"[EstablishmentDetail] Loaded mock data for establishment ID: {Id}");
+        }
+        finally
+        {
+            isLoading = false;
+            Console.WriteLine($"[EstablishmentDetail] LoadEstablishment completed. isLoading = false");
+        }
+    }
+
+    private EstablishmentDto GetMockEstablishment(int id)
+    {
+        var random = new Random(id);
+        var provinces = new[] { "Buenos Aires", "Santa Fe", "Córdoba", "Entre Ríos", "La Pampa" };
+
+        return new EstablishmentDto
+        {
+            Id = id,
+            Name = $"Establecimiento {id}",
+            Province = provinces[random.Next(provinces.Length)],
+            PostalCode = (3000 + random.Next(5000)).ToString(),
+            Renspa = $"{random.Next(10, 30)}-{random.Next(1, 10)}-{random.Next(10000, 99999)}",
+            CattleCount = random.Next(50, 300),
+            RegisterDate = DateTime.Now.AddMonths(-random.Next(1, 24)),
+            EstablishmentRegisterDate = DateTime.Now.AddYears(-random.Next(1, 10))
+        };
+    }
+
+    private async Task LoadCattle()
+    {
+        loadingCattle = true;
+        Console.WriteLine($"[EstablishmentDetail] LoadCattle started for establishment ID: {Id}");
+
+        try
+        {
+            var allCattle = await CattleService.GetAllAsync();
+            cattleList = allCattle.Where(c => c.EstablishmentId == Id).ToList();
+            Console.WriteLine($"[EstablishmentDetail] Loaded {cattleList.Count} cattle for establishment {Id}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[EstablishmentDetail] Exception in LoadCattle: {ex.GetType().Name} - {ex.Message}");
+            cattleList = GetMockCattle();
+            Console.WriteLine($"[EstablishmentDetail] Loaded {cattleList.Count} mock cattle");
+        }
+        finally
+        {
+            loadingCattle = false;
+            Console.WriteLine($"[EstablishmentDetail] LoadCattle completed");
+        }
+    }
+
+    private List<CattleDto> GetMockCattle()
+    {
+        var random = new Random(Id);
+        var count = establishment?.CattleCount ?? random.Next(5, 15);
+        var genders = new[] { "Macho", "Hembra" };
+        var origins = new[] { "Angus", "Hereford", "Brahman", "Charolais" };
+        var list = new List<CattleDto>();
+
+        for (int i = 1; i <= count; i++)
+        {
+            list.Add(new CattleDto
+            {
+                Id = Id * 100 + i,
+                Caravan = $"A{Id:D2}{i:D3}",
+                EstablishmentId = Id,
+                EstablishmentName = establishment?.Name,
+                Gender = genders[random.Next(genders.Length)],
+                Weight = random.Next(250, 650),
+                Origin = origins[random.Next(origins.Length)],
+                GDM = Math.Round((decimal)(random.NextDouble() * 1.5 + 0.5), 2),
+                Age = random.Next(1, 8)
+            });
+        }
+
+        return list;
+    }
+
+    private int GetYearsOfOperation()
+    {
+        if (establishment == null) return 0;
+        var years = (DateTime.Now - establishment.EstablishmentRegisterDate).TotalDays / 365.25;
+        return (int)Math.Floor(years);
+    }
+
+    private void NavigateToCattleDetail(int cattleId)
+    {
+        Console.WriteLine($"[EstablishmentDetail] Navigating to cattle detail: {cattleId}");
+        Navigation.NavigateTo($"/cattle/{cattleId}");
+    }
+
+    private void GoBack()
+    {
+        Console.WriteLine("[EstablishmentDetail] GoBack button clicked");
+        Navigation.NavigateTo("/establishments");
+    }
+
+    private void CloseErrorMessage()
+    {
+        Console.WriteLine($"[EstablishmentDetail] Error message closed: {errorMessage}");
+        errorMessage = null;
+    }
+
+    private void CloseSuccessMessage()
+    {
+        Console.WriteLine($"[EstablishmentDetail] Success message closed: {successMessage}");
+        successMessage = null;
+    }
+
+    private void ShowEditModal()
+    {
+        showEditModal = true;
+    }
+
+    private void HideEditModal()
+    {
+        showEditModal = false;
+    }
+
+    private void ShowDeleteConfirm()
+    {
+        showDeleteConfirmModal = true;
+    }
+
+    private async Task UpdateEstablishment()
+    {
+        if (establishment == null) return;
+
+        isSaving = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var success = await EstablishmentService.UpdateAsync(establishment.Id, establishment);
+            if (success)
+            {
+                successMessage = "Establecimiento actualizado correctamente";
+                HideEditModal();
+                await LoadEstablishment();
+            }
+            else
+            {
+                errorMessage = "Error al actualizar el establecimiento";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al conectar con el servidor";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DeleteEstablishment()
+    {
+        if (establishment == null) return;
+
+        isSaving = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var success = await EstablishmentService.DeleteAsync(establishment.Id);
+            if (success)
+            {
+                Navigation.NavigateTo("/establishments");
+            }
+            else
+            {
+                errorMessage = "Error al eliminar el establecimiento";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al conectar con el servidor";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

@@ -1,0 +1,571 @@
+@page "/establishments"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using IdAnimal.Shared.DTOs
+@using IdAnimal.Web.Services
+@inject EstablishmentService EstablishmentService
+@inject NavigationManager Navigation
+
+<PageTitle>Establecimientos - IdAnimal</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Establecimientos</h1>
+        <button class="btn btn-primary" @onclick="ShowAddModal">
+            <i class="bi bi-plus-circle"></i> Nuevo Establecimiento
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (establishments == null || !establishments.Any())
+    {
+        <div class="empty-state">
+            <i class="bi bi-building empty-state-icon"></i>
+            <h3>No hay establecimientos</h3>
+            <p>Comienza agregando tu primer establecimiento</p>
+            <button class="btn btn-primary" @onclick="ShowAddModal">
+                <i class="bi bi-plus-circle"></i> Agregar Establecimiento
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover establishments-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Provincia</th>
+                        <th>Código Postal</th>
+                        <th>RENSPA</th>
+                        <th>Ganado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var establishment in establishments)
+                    {
+                        <tr class="clickable-row" @onclick="() => NavigateToEstablishmentDetail(establishment.Id)">
+                            <td><strong>@establishment.Name</strong></td>
+                            <td>@establishment.Province</td>
+                            <td>@establishment.PostalCode</td>
+                            <td>@establishment.Renspa</td>
+                            <td>
+                                <span class="badge bg-primary">@establishment.CattleCount</span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group" @onclick:stopPropagation="true">
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEditModal(establishment)">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(establishment)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (showModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(isEditMode ? "Editar" : "Nuevo") Establecimiento</h5>
+                    <button type="button" class="btn-close" @onclick="HideModal"></button>
+                </div>
+                <EditForm Model="@currentEstablishment" OnValidSubmit="@SaveEstablishment">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre *</label>
+                            <InputText class="form-control" @bind-Value="currentEstablishment.Name" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Provincia *</label>
+                            <InputText class="form-control" @bind-Value="currentEstablishment.Province" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Código Postal</label>
+                            <InputText class="form-control" @bind-Value="currentEstablishment.PostalCode" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">RENSPA</label>
+                            <InputText class="form-control" @bind-Value="currentEstablishment.Renspa" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="HideModal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                            @if (isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm"></span>
+                            }
+                            Guardar
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (showDeleteConfirm)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" @onclick="() => showDeleteConfirm = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro que desea eliminar el establecimiento "<strong>@establishmentToDelete?.Name</strong>"?</p>
+                    @if (establishmentToDelete?.CattleCount > 0)
+                    {
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Este establecimiento tiene @establishmentToDelete.CattleCount cabeza(s) de ganado registradas.
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => showDeleteConfirm = false">Cancelar</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteEstablishment" disabled="@isSaving">
+                        @if (isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm"></span>
+                        }
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+<style>
+    .page-container {
+        padding: 25px;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .page-header h1 {
+        color: var(--accent-orange);
+        font-size: 32px;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        background-color: var(--card-bg);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+    }
+
+    .empty-state i {
+        color: var(--accent-orange) !important;
+    }
+
+    .empty-state-icon {
+        font-size: 48px;
+    }
+
+    .empty-state h3 {
+        margin: 20px 0 10px;
+        color: var(--text-primary);
+    }
+
+    .empty-state p {
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+    }
+
+    .modal {
+        background: var(--modal-backdrop);
+    }
+
+    .modal-backdrop {
+        background-color: var(--modal-backdrop);
+    }
+
+    /* Modal content and alert styles */
+    .modal-content {
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .modal-header,
+    .modal-footer {
+        border-color: var(--border-color) !important;
+    }
+
+    .modal-title {
+        color: var(--text-primary) !important;
+    }
+
+    .alert {
+        border-radius: var(--border-radius-sm) !important;
+    }
+
+    .alert-danger {
+        background-color: #DC3545 !important;
+        color: white !important;
+        border: none !important;
+    }
+
+    .alert-success {
+        background-color: var(--primary-green) !important;
+        color: white !important;
+        border: none !important;
+    }
+
+    .alert-warning {
+        background-color: var(--primary-orange) !important;
+        color: white !important;
+        border: none !important;
+    }
+
+    /* Table styling */
+    .establishments-table {
+        background-color: var(--card-bg) !important;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .establishments-table,
+    .establishments-table * {
+        box-sizing: border-box;
+    }
+
+    .establishments-table thead {
+        background-color: var(--primary-bg);
+    }
+
+    .establishments-table thead th {
+        color: var(--accent-orange);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 12px;
+        padding: 15px;
+        border-bottom: 2px solid var(--border-color);
+        border-top: none;
+    }
+
+    .establishments-table tbody tr {
+        background-color: var(--card-bg) !important;
+        border-bottom: 1px solid var(--border-color);
+        transition: background-color 0.2s;
+    }
+
+    .establishments-table tbody tr.clickable-row {
+        cursor: pointer;
+    }
+
+    .establishments-table tbody tr:hover {
+        background-color: var(--hover-bg) !important;
+    }
+
+    .establishments-table tbody td {
+        color: var(--text-primary) !important;
+        padding: 15px;
+        vertical-align: middle;
+        border-top: none;
+        background-color: transparent !important;
+    }
+
+    .establishments-table tbody td strong {
+        color: var(--accent-orange);
+    }
+
+    .establishments-table .badge {
+        background-color: var(--accent-orange) !important;
+        color: var(--text-primary);
+        font-size: 13px;
+        padding: 5px 10px;
+    }
+
+    .establishments-table .btn-outline-primary {
+        color: var(--accent-orange);
+        border-color: var(--accent-orange);
+    }
+
+    .establishments-table .btn-outline-primary:hover {
+        background-color: var(--accent-orange);
+        border-color: var(--accent-orange);
+        color: var(--text-primary);
+    }
+
+    .establishments-table .btn-outline-danger {
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+
+    .establishments-table .btn-outline-danger:hover {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: var(--text-primary);
+    }
+
+    .table-responsive {
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+    }
+</style>
+
+@code {
+    private List<EstablishmentDto>? establishments;
+    private EstablishmentDto currentEstablishment = new();
+    private EstablishmentDto? establishmentToDelete;
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private bool showModal = false;
+    private bool showDeleteConfirm = false;
+    private bool isEditMode = false;
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEstablishments();
+    }
+
+    private async Task LoadEstablishments()
+    {
+        isLoading = true;
+        try
+        {
+            establishments = await EstablishmentService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al cargar los establecimientos. Mostrando datos de ejemplo.";
+            establishments = GetMockEstablishments();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private List<EstablishmentDto> GetMockEstablishments()
+    {
+        return new List<EstablishmentDto>
+        {
+            new EstablishmentDto
+            {
+                Id = 1,
+                Name = "Estancia La Pampa",
+                Province = "Buenos Aires",
+                PostalCode = "7000",
+                Renspa = "22-1-12345",
+                CattleCount = 150,
+                RegisterDate = DateTime.Now.AddMonths(-6),
+                EstablishmentRegisterDate = DateTime.Now.AddYears(-2)
+            },
+            new EstablishmentDto
+            {
+                Id = 2,
+                Name = "Campo El Ombú",
+                Province = "Santa Fe",
+                PostalCode = "3000",
+                Renspa = "21-2-67890",
+                CattleCount = 85,
+                RegisterDate = DateTime.Now.AddMonths(-3),
+                EstablishmentRegisterDate = DateTime.Now.AddYears(-1)
+            },
+            new EstablishmentDto
+            {
+                Id = 3,
+                Name = "Hacienda Los Teros",
+                Province = "Córdoba",
+                PostalCode = "5000",
+                Renspa = "14-3-24680",
+                CattleCount = 220,
+                RegisterDate = DateTime.Now.AddMonths(-12),
+                EstablishmentRegisterDate = DateTime.Now.AddYears(-5)
+            },
+            new EstablishmentDto
+            {
+                Id = 4,
+                Name = "Establecimiento San Jorge",
+                Province = "Entre Ríos",
+                PostalCode = "3200",
+                Renspa = "08-1-13579",
+                CattleCount = 42,
+                RegisterDate = DateTime.Now.AddMonths(-1),
+                EstablishmentRegisterDate = DateTime.Now.AddMonths(-8)
+            },
+            new EstablishmentDto
+            {
+                Id = 5,
+                Name = "Rancho Grande",
+                Province = "La Pampa",
+                PostalCode = "6300",
+                Renspa = "16-5-98765",
+                CattleCount = 178,
+                RegisterDate = DateTime.Now.AddMonths(-9),
+                EstablishmentRegisterDate = DateTime.Now.AddYears(-3)
+            }
+        };
+    }
+
+    private void NavigateToEstablishmentDetail(int establishmentId)
+    {
+        Console.WriteLine($"[Establishments] Navigating to establishment detail: {establishmentId}");
+        Navigation.NavigateTo($"/establishments/{establishmentId}");
+    }
+
+    private void ShowAddModal()
+    {
+        currentEstablishment = new EstablishmentDto
+        {
+            RegisterDate = DateTime.Now,
+            EstablishmentRegisterDate = DateTime.Now
+        };
+        isEditMode = false;
+        showModal = true;
+    }
+
+    private void ShowEditModal(EstablishmentDto establishment)
+    {
+        currentEstablishment = new EstablishmentDto
+        {
+            Id = establishment.Id,
+            Name = establishment.Name,
+            Province = establishment.Province,
+            PostalCode = establishment.PostalCode,
+            Renspa = establishment.Renspa,
+            RegisterDate = establishment.RegisterDate,
+            EstablishmentRegisterDate = establishment.EstablishmentRegisterDate
+        };
+        isEditMode = true;
+        showModal = true;
+    }
+
+    private void HideModal()
+    {
+        showModal = false;
+        currentEstablishment = new();
+    }
+
+    private async Task SaveEstablishment()
+    {
+        isSaving = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            bool success;
+            if (isEditMode)
+            {
+                success = await EstablishmentService.UpdateAsync(currentEstablishment.Id, currentEstablishment);
+                successMessage = success ? "Establecimiento actualizado correctamente" : null;
+            }
+            else
+            {
+                success = await EstablishmentService.CreateAsync(currentEstablishment);
+                successMessage = success ? "Establecimiento creado correctamente" : null;
+            }
+
+            if (success)
+            {
+                HideModal();
+                await LoadEstablishments();
+            }
+            else
+            {
+                errorMessage = "Error al guardar el establecimiento";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al conectar con el servidor";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void ConfirmDelete(EstablishmentDto establishment)
+    {
+        establishmentToDelete = establishment;
+        showDeleteConfirm = true;
+    }
+
+    private async Task DeleteEstablishment()
+    {
+        if (establishmentToDelete == null) return;
+
+        isSaving = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var success = await EstablishmentService.DeleteAsync(establishmentToDelete.Id);
+
+            if (success)
+            {
+                successMessage = "Establecimiento eliminado correctamente";
+                showDeleteConfirm = false;
+                await LoadEstablishments();
+            }
+            else
+            {
+                errorMessage = "Error al eliminar el establecimiento";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al conectar con el servidor";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

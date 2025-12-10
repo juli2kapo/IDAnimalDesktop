@@ -1,0 +1,530 @@
+@page "/configuration"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using IdAnimal.Shared.DTOs
+@using IdAnimal.Web.Services
+@inject CustomDataService CustomDataService
+
+<PageTitle>Configuración - IdAnimal</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Configuración</h1>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Columnas Personalizadas de Datos</h5>
+                <button class="btn btn-primary btn-sm" @onclick="ShowAddModal">
+                    <i class="bi bi-plus-circle"></i> Nueva Columna
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <p class="text-secondary">
+                Las columnas personalizadas te permiten agregar campos adicionales a tus registros de ganado.
+            </p>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show">
+                    @errorMessage
+                    <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div class="alert alert-success alert-dismissible fade show">
+                    @successMessage
+                    <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+                </div>
+            }
+
+            @if (isLoading)
+            {
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                </div>
+            }
+            else if (columns == null || !columns.Any())
+            {
+                <div class="empty-state-small">
+                    <i class="bi bi-table empty-state-icon"></i>
+                    <p>No hay columnas personalizadas configuradas</p>
+                    <button class="btn btn-primary btn-sm" @onclick="ShowAddModal">
+                        <i class="bi bi-plus-circle"></i> Agregar Primera Columna
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nombre de Columna</th>
+                                <th>Tipo de Dato</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var column in columns)
+                            {
+                                <tr>
+                                    <td><strong>@column.ColumnName</strong></td>
+                                    <td>
+                                        <span class="badge bg-secondary">@column.DataType</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEditModal(column)">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(column)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Información del Sistema</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label text-secondary">Versión</label>
+                    <p class="mb-0">1.0.0</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label text-secondary">Plataforma</label>
+                    <p class="mb-0">IdAnimal Web</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (showModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(isEditMode ? "Editar" : "Nueva") Columna</h5>
+                    <button type="button" class="btn-close" @onclick="HideModal"></button>
+                </div>
+                <EditForm Model="@currentColumn" OnValidSubmit="@SaveColumn">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre de Columna *</label>
+                            <InputText class="form-control" @bind-Value="currentColumn.ColumnName" placeholder="Ej: Raza, Color, etc." />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de Dato *</label>
+                            <select class="form-select" @bind="currentColumn.DataType">
+                                <option value="">Seleccione...</option>
+                                <option value="Text">Texto</option>
+                                <option value="Number">Número</option>
+                                <option value="Date">Fecha</option>
+                                <option value="Boolean">Si/No</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="HideModal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                            @if (isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm"></span>
+                            }
+                            Guardar
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (showDeleteConfirm)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" @onclick="() => showDeleteConfirm = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro que desea eliminar la columna "<strong>@columnToDelete?.ColumnName</strong>"?</p>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Esta acción también eliminará todos los valores almacenados en esta columna.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => showDeleteConfirm = false">Cancelar</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteColumn" disabled="@isSaving">
+                        @if (isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm"></span>
+                        }
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+<style>
+    .page-container {
+        padding: 25px;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .page-header h1 {
+        color: var(--accent-orange);
+        font-size: 32px;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    .empty-state-small {
+        text-align: center;
+        padding: 40px 20px;
+    }
+
+    .empty-state-small p {
+        color: var(--text-secondary);
+        margin: 15px 0;
+    }
+
+    .empty-state-icon {
+        font-size: 36px;
+        color: var(--accent-orange) !important;
+    }
+
+    .modal {
+        background: rgba(0,0,0,0.7);
+    }
+
+    .modal-backdrop {
+        background-color: rgba(0,0,0,0.7);
+    }
+
+    /* Table Styles - Override Bootstrap defaults */
+    .table {
+        color: var(--text-primary) !important;
+        background-color: transparent !important;
+    }
+
+    .table thead th {
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    .table tbody tr {
+        background-color: transparent !important;
+        border-color: var(--border-color) !important;
+    }
+
+    .table tbody td {
+        color: var(--text-primary) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    .table tbody td strong {
+        color: var(--text-primary) !important;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: var(--hover-bg) !important;
+    }
+
+    /* Badge colors */
+    .badge {
+        color: var(--text-primary) !important;
+    }
+
+    .bg-secondary {
+        background-color: var(--text-secondary) !important;
+    }
+
+    /* Button group styles */
+    .btn-group .btn-outline-primary {
+        border-color: var(--accent-orange) !important;
+        color: var(--accent-orange) !important;
+        background-color: transparent !important;
+    }
+
+    .btn-group .btn-outline-primary:hover {
+        background-color: var(--accent-orange) !important;
+        color: white !important;
+    }
+
+    .btn-group .btn-outline-danger {
+        border-color: #DC3545 !important;
+        color: #DC3545 !important;
+        background-color: transparent !important;
+    }
+
+    .btn-group .btn-outline-danger:hover {
+        background-color: #DC3545 !important;
+        color: white !important;
+    }
+
+    /* Card and text colors */
+    .card {
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .text-secondary {
+        color: var(--text-secondary) !important;
+    }
+
+    /* Alert styles */
+    .alert {
+        border-radius: var(--border-radius-sm) !important;
+    }
+
+    .alert-danger {
+        background-color: #DC3545 !important;
+        color: white !important;
+        border: none !important;
+    }
+
+    .alert-success {
+        background-color: var(--primary-green) !important;
+        color: white !important;
+        border: none !important;
+    }
+
+    .alert-warning {
+        background-color: var(--primary-orange) !important;
+        color: white !important;
+        border: none !important;
+    }
+
+    /* Modal styles */
+    .modal-content {
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .modal-header,
+    .modal-footer {
+        border-color: var(--border-color) !important;
+    }
+</style>
+
+@code {
+    private List<CustomDataColumnDto>? columns;
+    private CustomDataColumnDto currentColumn = new();
+    private CustomDataColumnDto? columnToDelete;
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private bool showModal = false;
+    private bool showDeleteConfirm = false;
+    private bool isEditMode = false;
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadColumns();
+    }
+
+    private async Task LoadColumns()
+    {
+        isLoading = true;
+        try
+        {
+            columns = await CustomDataService.GetAllColumnsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al cargar las columnas personalizadas. Mostrando datos de ejemplo.";
+            columns = GetMockColumns();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private List<CustomDataColumnDto> GetMockColumns()
+    {
+        return new List<CustomDataColumnDto>
+        {
+            new CustomDataColumnDto
+            {
+                Id = 1,
+                ColumnName = "Raza",
+                DataType = "Text"
+            },
+            new CustomDataColumnDto
+            {
+                Id = 2,
+                ColumnName = "Color",
+                DataType = "Text"
+            },
+            new CustomDataColumnDto
+            {
+                Id = 3,
+                ColumnName = "Fecha de Nacimiento",
+                DataType = "Date"
+            },
+            new CustomDataColumnDto
+            {
+                Id = 4,
+                ColumnName = "Vacunado",
+                DataType = "Boolean"
+            },
+            new CustomDataColumnDto
+            {
+                Id = 5,
+                ColumnName = "Número de Partos",
+                DataType = "Number"
+            },
+            new CustomDataColumnDto
+            {
+                Id = 6,
+                ColumnName = "Temperatura",
+                DataType = "Number"
+            },
+            new CustomDataColumnDto
+            {
+                Id = 7,
+                ColumnName = "Observaciones",
+                DataType = "Text"
+            }
+        };
+    }
+
+    private void ShowAddModal()
+    {
+        currentColumn = new CustomDataColumnDto();
+        isEditMode = false;
+        showModal = true;
+    }
+
+    private void ShowEditModal(CustomDataColumnDto column)
+    {
+        currentColumn = new CustomDataColumnDto
+        {
+            Id = column.Id,
+            ColumnName = column.ColumnName,
+            DataType = column.DataType
+        };
+        isEditMode = true;
+        showModal = true;
+    }
+
+    private void HideModal()
+    {
+        showModal = false;
+        currentColumn = new();
+    }
+
+    private async Task SaveColumn()
+    {
+        isSaving = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            bool success;
+            if (isEditMode)
+            {
+                success = await CustomDataService.UpdateColumnAsync(currentColumn.Id, currentColumn);
+                successMessage = success ? "Columna actualizada correctamente" : null;
+            }
+            else
+            {
+                success = await CustomDataService.CreateColumnAsync(currentColumn);
+                successMessage = success ? "Columna creada correctamente" : null;
+            }
+
+            if (success)
+            {
+                HideModal();
+                await LoadColumns();
+            }
+            else
+            {
+                errorMessage = "Error al guardar la columna";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al conectar con el servidor";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void ConfirmDelete(CustomDataColumnDto column)
+    {
+        columnToDelete = column;
+        showDeleteConfirm = true;
+    }
+
+    private async Task DeleteColumn()
+    {
+        if (columnToDelete == null) return;
+
+        isSaving = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var success = await CustomDataService.DeleteColumnAsync(columnToDelete.Id);
+
+            if (success)
+            {
+                successMessage = "Columna eliminada correctamente";
+                showDeleteConfirm = false;
+                await LoadColumns();
+            }
+            else
+            {
+                errorMessage = "Error al eliminar la columna";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al conectar con el servidor";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

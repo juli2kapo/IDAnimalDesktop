@@ -1,0 +1,587 @@
+@page "/cattle/{Id:int}"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using IdAnimal.Shared.DTOs
+@using IdAnimal.Web.Services
+@inject CattleService CattleService
+@inject NavigationManager Navigation
+
+<PageTitle>Detalle del Animal - IdAnimal</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <button class="btn btn-secondary" @onclick="GoBack">
+            <i class="bi bi-arrow-left"></i> Volver
+        </button>
+        <div class="header-actions">
+            <button class="btn btn-primary" @onclick="ShowEditModal">
+                <i class="bi bi-pencil"></i> Editar
+            </button>
+            <button class="btn btn-danger" @onclick="ShowDeleteConfirm">
+                <i class="bi bi-trash"></i> Eliminar
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="CloseErrorMessage"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @successMessage
+            <button type="button" class="btn-close" @onclick="CloseSuccessMessage"></button>
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="text-center mt-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (cattle == null)
+    {
+        <div class="alert alert-danger">
+            No se encontró el animal solicitado.
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <!-- Main Info Card -->
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h2 class="cattle-title">
+                            <i class="bi bi-tag"></i> @cattle.Caravan
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="detail-label">Establecimiento</label>
+                                <p class="detail-value">
+                                    <i class="bi bi-building"></i> @(cattle.EstablishmentName ?? "No asignado")
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="detail-label">Género</label>
+                                <p class="detail-value">
+                                    <i class="bi bi-gender-ambiguous"></i> @(cattle.Gender ?? "No especificado")
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="detail-label">Peso (kg)</label>
+                                <p class="detail-value">
+                                    <i class="bi bi-speedometer"></i> @(cattle.Weight?.ToString() ?? "No especificado")
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="detail-label">Origen</label>
+                                <p class="detail-value">
+                                    <i class="bi bi-geo-alt"></i> @(cattle.Origin ?? "No especificado")
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="detail-label">GDM (Ganancia Diaria Media)</label>
+                                <p class="detail-value">
+                                    <i class="bi bi-graph-up"></i> @(cattle.GDM?.ToString() ?? "No especificado")
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="detail-label">Edad</label>
+                                <p class="detail-value">
+                                    <i class="bi bi-calendar"></i> @(cattle.Age?.ToString() ?? "No especificada")
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Data Card -->
+                @if (cattle.CustomData != null && cattle.CustomData.Any())
+                {
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5><i class="bi bi-list-check"></i> Datos Personalizados</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                @foreach (var customField in cattle.CustomData)
+                                {
+                                    <div class="col-md-6 mb-3">
+                                        <label class="detail-label">@customField.Key</label>
+                                        <p class="detail-value">@customField.Value</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Images & Videos Sidebar -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="bi bi-images"></i> Imágenes (@cattle.ImageCount)</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (cattle.ImageCount > 0)
+                        {
+                            <div class="images-placeholder">
+                                <i class="bi bi-image placeholder-icon"></i>
+                                <p class="text-secondary mt-2">@cattle.ImageCount imagen(es) disponible(s)</p>
+                                <button class="btn btn-primary btn-sm mt-2">
+                                    <i class="bi bi-eye"></i> Ver Imágenes
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="images-placeholder">
+                                <i class="bi bi-image placeholder-icon"></i>
+                                <p class="text-secondary mt-2">No hay imágenes</p>
+                                <button class="btn btn-primary btn-sm mt-2">
+                                    <i class="bi bi-upload"></i> Subir Imagen
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-camera-video"></i> Videos (@cattle.VideoCount)</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (cattle.VideoCount > 0)
+                        {
+                            <div class="images-placeholder">
+                                <i class="bi bi-camera-video placeholder-icon"></i>
+                                <p class="text-secondary mt-2">@cattle.VideoCount video(s) disponible(s)</p>
+                                <button class="btn btn-primary btn-sm mt-2">
+                                    <i class="bi bi-eye"></i> Ver Videos
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="images-placeholder">
+                                <i class="bi bi-camera-video placeholder-icon"></i>
+                                <p class="text-secondary mt-2">No hay videos</p>
+                                <button class="btn btn-primary btn-sm mt-2">
+                                    <i class="bi bi-upload"></i> Subir Video
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (showEditModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Animal</h5>
+                    <button type="button" class="btn-close" @onclick="HideEditModal"></button>
+                </div>
+                <EditForm Model="@cattle" OnValidSubmit="@UpdateCattle">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Caravana *</label>
+                                <InputText class="form-control" @bind-Value="cattle.Caravan" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Peso (kg)</label>
+                                <InputNumber class="form-control" @bind-Value="cattle.Weight" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Origen</label>
+                                <InputText class="form-control" @bind-Value="cattle.Origin" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Género</label>
+                                <select class="form-select" @bind="cattle.Gender">
+                                    <option value="">Seleccione...</option>
+                                    <option value="Macho">Macho</option>
+                                    <option value="Hembra">Hembra</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">GDM</label>
+                                <InputNumber class="form-control" @bind-Value="cattle.GDM" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Edad</label>
+                                <InputNumber class="form-control" @bind-Value="cattle.Age" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="HideEditModal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                            @if (isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm"></span>
+                            }
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (showDeleteConfirmModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" @onclick="() => showDeleteConfirmModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro que desea eliminar el animal con caravana "<strong>@cattle?.Caravan</strong>"?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => showDeleteConfirmModal = false">Cancelar</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteCattle" disabled="@isSaving">
+                        @if (isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm"></span>
+                        }
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+<style>
+    .page-container {
+        padding: 25px;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .cattle-title {
+        color: var(--accent-orange);
+        font-size: 28px;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    .detail-label {
+        color: var(--text-secondary);
+        font-size: 12px;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 5px;
+        display: block;
+    }
+
+    .detail-value {
+        color: var(--text-primary);
+        font-size: 16px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .detail-value i {
+        color: var(--accent-orange);
+        font-size: 18px;
+    }
+
+    .images-placeholder {
+        text-align: center;
+        padding: 30px 20px;
+        background-color: var(--primary-bg);
+        border-radius: 8px;
+    }
+
+    .placeholder-icon {
+        font-size: 48px;
+        color: var(--text-secondary);
+    }
+
+    .modal {
+        background: var(--modal-backdrop);
+    }
+
+    .modal-backdrop {
+        background-color: var(--modal-backdrop);
+    }
+
+    /* Modal content and alert styles */
+    .modal-content {
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .modal-header,
+    .modal-footer {
+        border-color: var(--border-color) !important;
+    }
+
+    .modal-title {
+        color: var(--text-primary) !important;
+    }
+
+    .alert {
+        border-radius: var(--border-radius-sm) !important;
+    }
+
+    .alert-danger {
+        background-color: #DC3545 !important;
+        color: white !important;
+        border: none !important;
+    }
+
+    .alert-success {
+        background-color: var(--primary-green) !important;
+        color: white !important;
+        border: none !important;
+    }
+
+    .text-secondary {
+        color: var(--text-secondary) !important;
+    }
+
+    /* Card styles override */
+    .card {
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .card-header h5 {
+        color: var(--text-primary) !important;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private CattleDto? cattle;
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private bool showEditModal = false;
+    private bool showDeleteConfirmModal = false;
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine($"[CattleDetail] OnInitializedAsync called for cattle ID: {Id}");
+        await LoadCattle();
+    }
+
+    private async Task LoadCattle()
+    {
+        isLoading = true;
+        Console.WriteLine($"[CattleDetail] LoadCattle started for ID: {Id}");
+
+        try
+        {
+            Console.WriteLine($"[CattleDetail] Calling CattleService.GetByIdAsync({Id})");
+            var detailDto = await CattleService.GetByIdAsync(Id);
+
+            if (detailDto != null)
+            {
+                Console.WriteLine($"[CattleDetail] Successfully received data for cattle: {detailDto.Caravan}");
+                cattle = new CattleDto
+                {
+                    Id = detailDto.Id,
+                    Caravan = detailDto.Caravan,
+                    Name = detailDto.Name,
+                    Weight = decimal.TryParse(detailDto.Weight, out var w) ? w : null,
+                    Origin = detailDto.Origin,
+                    Age = detailDto.Age,
+                    Gender = detailDto.Gender,
+                    GDM = decimal.TryParse(detailDto.GDM, out var gdm) ? gdm : null,
+                    EstablishmentId = detailDto.EstablishmentId,
+                    EstablishmentName = detailDto.EstablishmentName,
+                    ImageCount = detailDto.Images?.Count ?? 0,
+                    VideoCount = detailDto.Videos?.Count ?? 0,
+                    CustomData = detailDto.CustomData
+                };
+                Console.WriteLine($"[CattleDetail] Cattle DTO created successfully");
+            }
+            else
+            {
+                Console.WriteLine($"[CattleDetail] API returned null for cattle ID: {Id}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[CattleDetail] Exception in LoadCattle: {ex.GetType().Name} - {ex.Message}");
+            Console.WriteLine($"[CattleDetail] Stack trace: {ex.StackTrace}");
+            errorMessage = "Error al cargar los datos. Mostrando datos de ejemplo.";
+            cattle = GetMockCattle(Id);
+            Console.WriteLine($"[CattleDetail] Loaded mock data for cattle ID: {Id}");
+        }
+        finally
+        {
+            isLoading = false;
+            Console.WriteLine($"[CattleDetail] LoadCattle completed. isLoading = false");
+        }
+    }
+
+    private CattleDto GetMockCattle(int id)
+    {
+        var random = new Random(id);
+        var establishments = new[] { "Estancia La Pampa", "Campo El Ombú", "Hacienda Los Teros" };
+        var genders = new[] { "Macho", "Hembra" };
+        var origins = new[] { "Angus", "Hereford", "Brahman", "Charolais" };
+
+        return new CattleDto
+        {
+            Id = id,
+            Caravan = $"A{id:D4}",
+            EstablishmentName = establishments[random.Next(establishments.Length)],
+            Weight = random.Next(250, 650),
+            Origin = origins[random.Next(origins.Length)],
+            Gender = genders[random.Next(genders.Length)],
+            GDM = Math.Round((decimal)(random.NextDouble() * 1.5 + 0.5), 2),
+            Age = random.Next(1, 8),
+            ImageCount = random.Next(0, 5),
+            VideoCount = random.Next(0, 2),
+            CustomData = new Dictionary<string, string>
+            {
+                { "Raza", origins[random.Next(origins.Length)] },
+                { "Color", random.Next(2) == 0 ? "Negro" : "Colorado" },
+                { "Vacunado", random.Next(2) == 0 ? "Sí" : "No" }
+            }
+        };
+    }
+
+    private void GoBack()
+    {
+        Console.WriteLine("[CattleDetail] GoBack button clicked");
+        Navigation.NavigateTo("/cattle");
+    }
+
+    private void CloseErrorMessage()
+    {
+        Console.WriteLine($"[CattleDetail] Error message closed: {errorMessage}");
+        errorMessage = null;
+    }
+
+    private void CloseSuccessMessage()
+    {
+        Console.WriteLine($"[CattleDetail] Success message closed: {successMessage}");
+        successMessage = null;
+    }
+
+    private void ShowEditModal()
+    {
+        showEditModal = true;
+    }
+
+    private void HideEditModal()
+    {
+        showEditModal = false;
+    }
+
+    private void ShowDeleteConfirm()
+    {
+        showDeleteConfirmModal = true;
+    }
+
+    private async Task UpdateCattle()
+    {
+        if (cattle == null) return;
+
+        isSaving = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var success = await CattleService.UpdateAsync(cattle.Id, cattle);
+            if (success)
+            {
+                successMessage = "Animal actualizado correctamente";
+                HideEditModal();
+                await LoadCattle();
+            }
+            else
+            {
+                errorMessage = "Error al actualizar el animal";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al conectar con el servidor";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DeleteCattle()
+    {
+        if (cattle == null) return;
+
+        isSaving = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var success = await CattleService.DeleteAsync(cattle.Id);
+            if (success)
+            {
+                Navigation.NavigateTo("/cattle");
+            }
+            else
+            {
+                errorMessage = "Error al eliminar el animal";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al conectar con el servidor";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

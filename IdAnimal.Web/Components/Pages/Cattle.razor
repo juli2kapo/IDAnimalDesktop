@@ -1,0 +1,867 @@
+@page "/cattle"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using IdAnimal.Shared.DTOs
+@using IdAnimal.Web.Services
+@inject CattleService CattleService
+@inject EstablishmentService EstablishmentService
+@inject NavigationManager Navigation
+
+<PageTitle>Ganado - IdAnimal</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Ganado</h1>
+        <button class="btn btn-primary" @onclick="ShowAddModal">
+            <i class="bi bi-plus-circle"></i> Nuevo Animal
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        {
+            Console.WriteLine($"[Cattle] Rendering error message: {errorMessage}");
+        }
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="position: relative; z-index: 9999;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>@errorMessage</span>
+                <button type="button" class="btn-close" @onclick="@CleanErrorMessage"></button>
+            </div>
+        </div>
+    }
+    else
+    {
+        {
+            Console.WriteLine("[Cattle] No error message to display");
+        }
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @successMessage
+            <button type="button" class="btn-close" aria-label="Close" @onclick="@(() => { Console.WriteLine("[Cattle] Success close clicked!"); successMessage = null; })"></button>
+        </div>
+    }
+
+    <!-- Filters -->
+    <div class="filters-container">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Establecimiento</label>
+                <select class="form-select" value="@filterEstablishmentId" @onchange="OnEstablishmentFilterChange">
+                    <option value="0">Todos</option>
+                    @if (establishments != null)
+                    {
+                        @foreach (var est in establishments)
+                        {
+                            <option value="@est.Id">@est.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Género</label>
+                <select class="form-select" value="@filterGender" @onchange="OnGenderFilterChange">
+                    <option value="">Todos</option>
+                    <option value="Macho">Macho</option>
+                    <option value="Hembra">Hembra</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Buscar Caravana</label>
+                <input type="text" class="form-control" placeholder="Ej: A123" value="@searchCaravan" @oninput="OnSearchCaravanInput" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-secondary w-100" @onclick="ClearFilters">
+                    <i class="bi bi-x-circle"></i> Limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center mt-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (filteredCattleList == null || !filteredCattleList.Any())
+    {
+        <div class="empty-state">
+            <i class="bi bi-file-earmark-text" style="font-size: 48px; color: var(--accent-orange);"></i>
+            <h3>No hay ganado registrado</h3>
+            <p>@(HasActiveFilters() ? "No se encontraron resultados con los filtros aplicados" : "Comienza agregando tu primer animal")</p>
+            @if (!HasActiveFilters())
+            {
+                <button class="btn btn-primary" @onclick="ShowAddModal">
+                    <i class="bi bi-plus-circle"></i> Agregar Animal
+                </button>
+            }
+        </div>
+    }
+    else
+    {
+        <!-- Results info -->
+        @if (filteredCattleList.Any())
+        {
+            <div class="results-info">
+                Mostrando @pagedCattleList.Count de @filteredCattleList.Count animales (Página @currentPage de @totalPages)
+            </div>
+        }
+
+        <!-- Grid of cattle cards -->
+        <div class="cattle-grid">
+            @foreach (var cattle in pagedCattleList)
+            {
+                <div class="cattle-card" @onclick="() => NavigateToCattleDetail(cattle.Id)">
+                    <div class="cattle-card-header">
+                        <span class="cattle-caravan">@cattle.Caravan</span>
+                        <div class="cattle-actions" @onclick:stopPropagation="true">
+                            <button class="btn btn-sm btn-icon btn-edit" @onclick="() => ShowEditModal(cattle)" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-icon btn-delete" @onclick="() => ConfirmDelete(cattle)" title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="cattle-card-body">
+                        <div class="cattle-image">
+                            <i class="bi bi-image"></i>
+                            @if (cattle.ImageCount > 0)
+                            {
+                                <span class="image-badge">@cattle.ImageCount</span>
+                            }
+                        </div>
+                        <div class="cattle-info">
+                            <div class="info-row">
+                                <i class="bi bi-building"></i>
+                                <span>@(cattle.EstablishmentName ?? "Sin establecimiento")</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(cattle.Gender))
+                            {
+                                <div class="info-row">
+                                    <i class="bi bi-gender-ambiguous"></i>
+                                    <span>@cattle.Gender</span>
+                                </div>
+                            }
+                            @if (cattle.Weight.HasValue)
+                            {
+                                <div class="info-row">
+                                    <i class="bi bi-speedometer"></i>
+                                    <span>@cattle.Weight kg</span>
+                                </div>
+                            }
+                            @if (cattle.GDM.HasValue)
+                            {
+                                <div class="info-row">
+                                    <i class="bi bi-graph-up"></i>
+                                    <span>GDM: @cattle.GDM</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-container">
+            <button class="btn btn-secondary" @onclick="PreviousPage" disabled="@(currentPage == 1)">
+                <i class="bi bi-chevron-left"></i> Anterior
+            </button>
+
+            <div class="page-numbers">
+                @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                {
+                    int pageNum = i;
+                    <button class="btn @(pageNum == currentPage ? "btn-primary" : "btn-outline-secondary")"
+                            @onclick="() => GoToPage(pageNum)">
+                        @pageNum
+                    </button>
+                }
+            </div>
+
+            <button class="btn btn-secondary" @onclick="NextPage" disabled="@(currentPage >= totalPages)">
+                Siguiente <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+    }
+</div>
+
+@if (showModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(isEditMode ? "Editar" : "Nuevo") Animal</h5>
+                    <button type="button" class="btn-close" @onclick="HideModal"></button>
+                </div>
+                <EditForm Model="@currentCattle" OnValidSubmit="@SaveCattle">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Establecimiento *</label>
+                                <select class="form-select" @bind="currentCattle.EstablishmentId">
+                                    <option value="0">Seleccione...</option>
+                                    @if (establishments != null)
+                                    {
+                                        @foreach (var est in establishments)
+                                        {
+                                            <option value="@est.Id">@est.Name</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Caravana *</label>
+                                <InputText class="form-control" @bind-Value="currentCattle.Caravan" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Peso (kg)</label>
+                                <InputNumber class="form-control" @bind-Value="currentCattle.Weight" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Origen</label>
+                                <InputText class="form-control" @bind-Value="currentCattle.Origin" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Género</label>
+                                <select class="form-select" @bind="currentCattle.Gender">
+                                    <option value="">Seleccione...</option>
+                                    <option value="Macho">Macho</option>
+                                    <option value="Hembra">Hembra</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">GDM</label>
+                                <InputNumber class="form-control" @bind-Value="currentCattle.GDM" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="HideModal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                            @if (isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm"></span>
+                            }
+                            Guardar
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (showDeleteConfirm)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" @onclick="() => showDeleteConfirm = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro que desea eliminar el animal con caravana "<strong>@cattleToDelete?.Caravan</strong>"?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => showDeleteConfirm = false">Cancelar</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteCattle" disabled="@isSaving">
+                        @if (isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm"></span>
+                        }
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+<style>
+    .page-container {
+        padding: 25px;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .page-header h1 {
+        color: var(--accent-orange);
+        font-size: 32px;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    .filters-container {
+        background-color: var(--card-bg);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow);
+    }
+
+    .results-info {
+        color: var(--text-secondary);
+        margin-bottom: 15px;
+        font-size: 14px;
+    }
+
+    .cattle-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 12px;
+        margin-bottom: 30px;
+    }
+
+    .cattle-card {
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .cattle-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .cattle-card-header {
+        background-color: var(--primary-orange);
+        padding: 8px 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .cattle-caravan {
+        color: white;
+        font-weight: bold;
+        font-size: 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .cattle-actions {
+        display: flex;
+        gap: 4px;
+    }
+
+    .btn-icon {
+        background-color: transparent;
+        border: none;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+    }
+
+    .btn-icon:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-edit:hover {
+        background-color: rgba(125, 184, 97, 0.8) !important;
+    }
+
+    .btn-delete:hover {
+        background-color: rgba(220, 53, 69, 0.8) !important;
+    }
+
+    .cattle-card-body {
+        padding: 10px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .cattle-image {
+        background-color: var(--primary-bg);
+        border-radius: 6px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+        position: relative;
+    }
+
+    .cattle-image i {
+        font-size: 32px;
+        color: var(--text-secondary);
+    }
+
+    .image-badge {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background-color: var(--primary-orange);
+        color: white;
+        border-radius: 10px;
+        padding: 2px 6px;
+        font-size: 11px;
+        font-weight: bold;
+    }
+
+    .cattle-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .info-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: var(--text-secondary);
+    }
+
+    .info-row i {
+        color: var(--accent-orange);
+        font-size: 12px;
+    }
+
+    .info-row span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-top: 30px;
+    }
+
+    .page-numbers {
+        display: flex;
+        gap: 5px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        background-color: var(--card-bg);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        margin-top: 20px;
+    }
+
+    .empty-state i {
+        color: var(--accent-orange) !important;
+    }
+
+    .empty-state h3 {
+        margin: 20px 0 10px;
+        color: var(--text-primary);
+    }
+
+    .empty-state p {
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+    }
+
+    .modal {
+        background: rgba(0,0,0,0.7);
+    }
+
+    .modal-backdrop {
+        background-color: rgba(0,0,0,0.7);
+    }
+
+    /* Responsive grid */
+    @@media (max-width: 1400px) {
+        .cattle-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    @@media (max-width: 1000px) {
+        .cattle-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .cattle-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .cattle-grid {
+            grid-template-columns: repeat(1, 1fr);
+        }
+    }
+</style>
+
+@code {
+    private List<CattleDto>? cattleList;
+    private List<CattleDto> filteredCattleList = new();
+    private List<CattleDto> pagedCattleList = new();
+    private List<EstablishmentDto>? establishments;
+    private CattleDto currentCattle = new();
+    private CattleDto? cattleToDelete;
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private bool showModal = false;
+    private bool showDeleteConfirm = false;
+    private bool isEditMode = false;
+    private string? errorMessage;
+    private string? successMessage;
+
+    // Filter variables
+    private int filterEstablishmentId = 0;
+    private string filterGender = "";
+    private string searchCaravan = "";
+
+    // Pagination variables
+    private int currentPage = 1;
+    private int itemsPerPage = 25; // 5 per row × 5 rows
+    private int totalPages => filteredCattleList.Count == 0 ? 1 : (int)Math.Ceiling((double)filteredCattleList.Count / itemsPerPage);
+
+    private void CleanErrorMessage()
+    {
+        Console.WriteLine($"[Cattle] CleanErrorMessage called. Current error: {errorMessage}");
+        errorMessage = null;
+        Console.WriteLine($"[Cattle] Error message cleared. New value: {(errorMessage == null ? "null" : errorMessage)}");
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            var cattleTask = CattleService.GetAllAsync();
+            var establishmentsTask = EstablishmentService.GetAllAsync();
+
+            await Task.WhenAll(cattleTask, establishmentsTask);
+
+            cattleList = await cattleTask;
+            establishments = await establishmentsTask;
+
+            ApplyFiltersAndPagination();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al cargar los datos. Mostrando datos de ejemplo.";
+            establishments = GetMockEstablishments();
+            cattleList = GetMockCattle();
+            ApplyFiltersAndPagination();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private List<EstablishmentDto> GetMockEstablishments()
+    {
+        return new List<EstablishmentDto>
+        {
+            new EstablishmentDto { Id = 1, Name = "Estancia La Pampa", Province = "Buenos Aires" },
+            new EstablishmentDto { Id = 2, Name = "Campo El Ombú", Province = "Santa Fe" },
+            new EstablishmentDto { Id = 3, Name = "Hacienda Los Teros", Province = "Córdoba" },
+            new EstablishmentDto { Id = 4, Name = "Establecimiento San Jorge", Province = "Entre Ríos" },
+            new EstablishmentDto { Id = 5, Name = "Rancho Grande", Province = "La Pampa" }
+        };
+    }
+
+    private List<CattleDto> GetMockCattle()
+    {
+        var random = new Random();
+        var establishments = new[] { "Estancia La Pampa", "Campo El Ombú", "Hacienda Los Teros", "Establecimiento San Jorge", "Rancho Grande" };
+        var genders = new[] { "Macho", "Hembra" };
+        var origins = new[] { "Angus", "Hereford", "Brahman", "Charolais", "Brangus", "Limousin", "Criollo" };
+        var cattle = new List<CattleDto>();
+
+        for (int i = 1; i <= 120; i++)
+        {
+            var establishmentId = random.Next(1, 6);
+            cattle.Add(new CattleDto
+            {
+                Id = i,
+                Caravan = $"A{i:D4}",
+                EstablishmentId = establishmentId,
+                EstablishmentName = establishments[establishmentId - 1],
+                Weight = random.Next(250, 650),
+                Origin = origins[random.Next(origins.Length)],
+                Gender = genders[random.Next(genders.Length)],
+                GDM = Math.Round((decimal)(random.NextDouble() * 1.5 + 0.5), 2),
+                ImageCount = random.Next(0, 5),
+                VideoCount = random.Next(0, 2)
+            });
+        }
+
+        return cattle;
+    }
+
+    private void OnEstablishmentFilterChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int value))
+        {
+            filterEstablishmentId = value;
+        }
+        else
+        {
+            filterEstablishmentId = 0;
+        }
+        ApplyFilters();
+    }
+
+    private void OnGenderFilterChange(ChangeEventArgs e)
+    {
+        filterGender = e.Value?.ToString() ?? "";
+        ApplyFilters();
+    }
+
+    private void OnSearchCaravanInput(ChangeEventArgs e)
+    {
+        searchCaravan = e.Value?.ToString() ?? "";
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        currentPage = 1; // Reset to first page when filters change
+        ApplyFiltersAndPagination();
+    }
+
+    private void ApplyFiltersAndPagination()
+    {
+        if (cattleList == null)
+        {
+            filteredCattleList = new();
+            pagedCattleList = new();
+            return;
+        }
+
+        // Apply filters
+        var query = cattleList.AsEnumerable();
+
+        if (filterEstablishmentId > 0)
+        {
+            query = query.Where(c => c.EstablishmentId == filterEstablishmentId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterGender))
+        {
+            query = query.Where(c => c.Gender != null && c.Gender.Equals(filterGender, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchCaravan))
+        {
+            query = query.Where(c => c.Caravan.Contains(searchCaravan, StringComparison.OrdinalIgnoreCase));
+        }
+
+        filteredCattleList = query.ToList();
+
+        // Apply pagination
+        pagedCattleList = filteredCattleList
+            .Skip((currentPage - 1) * itemsPerPage)
+            .Take(itemsPerPage)
+            .ToList();
+    }
+
+    private void ClearFilters()
+    {
+        filterEstablishmentId = 0;
+        filterGender = "";
+        searchCaravan = "";
+        currentPage = 1;
+        ApplyFiltersAndPagination();
+    }
+
+    private bool HasActiveFilters()
+    {
+        return filterEstablishmentId > 0 ||
+               !string.IsNullOrWhiteSpace(filterGender) ||
+               !string.IsNullOrWhiteSpace(searchCaravan);
+    }
+
+    // Pagination methods
+    private void GoToPage(int page)
+    {
+        currentPage = page;
+        ApplyFiltersAndPagination();
+    }
+
+    private void FirstPage()
+    {
+        currentPage = 1;
+        ApplyFiltersAndPagination();
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            ApplyFiltersAndPagination();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            ApplyFiltersAndPagination();
+        }
+    }
+
+    private void LastPage()
+    {
+        currentPage = totalPages;
+        ApplyFiltersAndPagination();
+    }
+
+    private void NavigateToCattleDetail(int cattleId)
+    {
+        Navigation.NavigateTo($"/cattle/{cattleId}");
+    }
+
+    private void ShowAddModal()
+    {
+        currentCattle = new CattleDto();
+        isEditMode = false;
+        showModal = true;
+    }
+
+    private void ShowEditModal(CattleDto cattle)
+    {
+        currentCattle = new CattleDto
+        {
+            Id = cattle.Id,
+            EstablishmentId = cattle.EstablishmentId,
+            Caravan = cattle.Caravan,
+            Weight = cattle.Weight,
+            Origin = cattle.Origin,
+            Gender = cattle.Gender,
+            GDM = cattle.GDM
+        };
+        isEditMode = true;
+        showModal = true;
+    }
+
+    private void HideModal()
+    {
+        showModal = false;
+        currentCattle = new();
+    }
+
+    private async Task SaveCattle()
+    {
+        isSaving = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            bool success;
+            if (isEditMode)
+            {
+                success = await CattleService.UpdateAsync(currentCattle.Id, currentCattle);
+                successMessage = success ? "Animal actualizado correctamente" : null;
+            }
+            else
+            {
+                success = await CattleService.CreateAsync(currentCattle);
+                successMessage = success ? "Animal creado correctamente" : null;
+            }
+
+            if (success)
+            {
+                HideModal();
+                cattleList = await CattleService.GetAllAsync();
+                ApplyFiltersAndPagination();
+            }
+            else
+            {
+                errorMessage = "Error al guardar el animal";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al conectar con el servidor";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void ConfirmDelete(CattleDto cattle)
+    {
+        cattleToDelete = cattle;
+        showDeleteConfirm = true;
+    }
+
+    private async Task DeleteCattle()
+    {
+        if (cattleToDelete == null) return;
+
+        isSaving = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var success = await CattleService.DeleteAsync(cattleToDelete.Id);
+
+            if (success)
+            {
+                successMessage = "Animal eliminado correctamente";
+                showDeleteConfirm = false;
+                cattleList = await CattleService.GetAllAsync();
+                ApplyFiltersAndPagination();
+            }
+            else
+            {
+                errorMessage = "Error al eliminar el animal";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al conectar con el servidor";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

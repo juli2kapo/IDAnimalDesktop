@@ -1,0 +1,184 @@
+@page "/"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>IdAnimal - Sistema de Gestión de Ganado</PageTitle>
+
+<div class="landing-page">
+    <div class="hero-section">
+        <div class="hero-content">
+            <h1>IdAnimal</h1>
+            <p class="tagline">Sistema Integral de Gestión de Ganado</p>
+            <p class="description">
+                Gestiona tus establecimientos, registra tu ganado, y mantén control total
+                de tu producción con identificación biométrica por morro.
+            </p>
+        </div>
+        <div class="hero-image">
+            <i class="bi bi-clipboard-data" style="font-size: 200px; color: white;"></i>
+        </div>
+    </div>
+
+    <div class="features-section">
+        <h2>Características Principales</h2>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="bi bi-building feature-icon"></i>
+                    <h3>Establecimientos</h3>
+                    <p>Gestiona múltiples establecimientos con información detallada y estadísticas.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="bi bi-list-ul feature-icon"></i>
+                    <h3>Registro de Ganado</h3>
+                    <p>Control completo de tu ganado: caravana, peso, origen, género, GDM y datos personalizados.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="bi bi-camera feature-icon"></i>
+                    <h3>Identificación Biométrica</h3>
+                    <p>Identifica ganado por fotografía del morro con tecnología de reconocimiento avanzada.</p>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="bi bi-cloud-upload feature-icon"></i>
+                    <h3>Almacenamiento en la Nube</h3>
+                    <p>Imágenes y videos almacenados de forma segura en la nube.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="bi bi-file-earmark-spreadsheet feature-icon"></i>
+                    <h3>Importación Excel/CSV</h3>
+                    <p>Importa datos desde archivos Excel o CSV para carga masiva.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="bi bi-file-pdf feature-icon"></i>
+                    <h3>Reportes PDF</h3>
+                    <p>Genera reportes profesionales en PDF para presentar a clientes.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .landing-page {
+        min-height: 100vh;
+    }
+
+    .hero-section {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 80px 60px;
+        background: linear-gradient(135deg, var(--primary-orange) 0%, var(--accent-orange) 100%);
+        color: white;
+        gap: 40px;
+    }
+
+    .hero-content {
+        flex: 1;
+        max-width: 600px;
+    }
+
+    .hero-content h1 {
+        font-size: 4rem;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+
+    .tagline {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+        opacity: 0.95;
+    }
+
+    .description {
+        font-size: 1.1rem;
+        margin-bottom: 30px;
+        opacity: 0.9;
+        line-height: 1.6;
+    }
+
+    .hero-image {
+        flex: 0 0 auto;
+        text-align: center;
+    }
+
+    .hero-image i {
+        color: white !important;
+    }
+
+    .features-section {
+        padding: 80px 60px;
+        background: var(--primary-bg);
+    }
+
+    .features-section h2 {
+        text-align: center;
+        font-size: 2.5rem;
+        margin-bottom: 50px;
+        color: var(--accent-orange);
+    }
+
+    .feature-card {
+        background: var(--card-bg);
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        text-align: center;
+        height: 100%;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .feature-icon {
+        font-size: 48px;
+        color: var(--primary-orange);
+        margin-bottom: 20px;
+    }
+
+    .feature-card h3 {
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+        color: var(--text-primary);
+    }
+
+    .feature-card p {
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    @@media (max-width: 768px) {
+        .hero-section {
+            flex-direction: column;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .hero-content h1 {
+            font-size: 2.5rem;
+        }
+
+        .hero-image {
+            display: none;
+        }
+
+        .features-section {
+            padding: 40px 20px;
+        }
+    }
+</style>
+
