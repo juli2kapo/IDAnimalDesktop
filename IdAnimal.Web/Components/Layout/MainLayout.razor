@@ -1,19 +1,43 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+@using IdAnimal.Web.Services
+@inject AuthStateProvider AuthStateProvider
+@inject NavigationManager NavManager
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+    @* ✅ 1. Wrap Sidebar in AuthorizeView so only logged-in users see it *@
+    <AuthorizeView>
+        <Authorized>
+            <div class="sidebar">
+                <NavMenu />
+            </div>
+        </Authorized>
+    </AuthorizeView>
 
     <main>
+        @* ✅ 2. Add a Header Bar with Logout Button *@
+        <div class="top-row px-4">
+            <AuthorizeView>
+                <Authorized>
+                    <span>Hola, @context.User.Identity?.Name</span>
+                    <button class="btn btn-link" @onclick="Logout">Cerrar Sesión</button>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="login">Iniciar Sesión</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+
         <article class="content px-4">
             @Body
         </article>
     </main>
 </div>
 
-<div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
-</div>
+@code {
+    private async Task Logout()
+    {
+        await AuthStateProvider.LogoutAsync();
+        NavManager.NavigateTo("/login");
+    }
+}

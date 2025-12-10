@@ -10,8 +10,9 @@ builder.Services.AddRazorComponents()
 
 // Add authentication and authorization
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddScoped<AuthenticationStateProvider, AuthStateProvider>();
 builder.Services.AddScoped<AuthStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(provider => 
+    provider.GetRequiredService<AuthStateProvider>());
 builder.Services.AddAuthorization();
 
 // Add HTTP clients

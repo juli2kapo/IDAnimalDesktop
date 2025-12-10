@@ -16,7 +16,8 @@ public class ApiClient
         _configuration = configuration;
         _authStateProvider = authStateProvider;
 
-        var baseUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5001";
+        //var baseUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5001";
+        var baseUrl = "https://localhost:5001";
         _httpClient.BaseAddress = new Uri(baseUrl);
     }
 

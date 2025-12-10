@@ -21,6 +21,7 @@ public class EstablishmentsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<EstablishmentDto>>> GetAll()
     {
+        Console.WriteLine("Got a GET request");
         var userId = DefaultUserId;
         var establishments = await _context.Establishments
             .Where(e => e.UserId == userId)

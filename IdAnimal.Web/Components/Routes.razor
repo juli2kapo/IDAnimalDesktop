@@ -1,16 +1,28 @@
-﻿<Router AppAssembly="typeof(Program).Assembly">
+﻿@using Microsoft.AspNetCore.Components.Authorization
+<CascadingAuthenticationState>
+<Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+        @* ✅ CHANGE: Use AuthorizeRouteView instead of RouteView *@
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+            <NotAuthorized>
+                @* This shows if a user tries to access a protected page while logged out *@
+                <div class="alert alert-warning m-4">
+                    <h3>Acceso Denegado</h3>
+                    <p>Debes iniciar sesión para ver esta página.</p>
+                    <a href="login" class="btn btn-primary">Ir al Login</a>
+                </div>
+            </NotAuthorized>
+        </AuthorizeRouteView>
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
     <NotFound>
         <PageTitle>No encontrada</PageTitle>
         <LayoutView Layout="typeof(Layout.MainLayout)">
-            <div class="text-center" style="padding: 40px;">
+             <div class="text-center" style="padding: 40px;">
                 <h1>404 - Página no encontrada</h1>
-                <p>La página que buscas no existe.</p>
                 <a href="/" class="btn btn-primary">Ir al inicio</a>
             </div>
         </LayoutView>
     </NotFound>
 </Router>
+</CascadingAuthenticationState>

@@ -22,14 +22,14 @@ public class CattleController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<CattleDto>>> GetAll([FromQuery] int? establishmentId = null)
+    public async Task<ActionResult<List<CattleDto>>> GetAll([FromQuery] int? establishmentId = null, [FromQuery] int? userId = null)
     {
         var query = _context.Cattle
             .Include(c => c.Establishment)
             .Include(c => c.Images)
             .Include(c => c.Videos)
             .Include(c => c.CustomDataValues)
-            .ThenInclude(cdv => cdv.CustomDataColumn)
+            .ThenInclude(cdv => cdv.CustomDataColumn) // Ensure this is included
             .Where(c => c.Establishment!.UserId == userId);
 
         if (establishmentId.HasValue)
@@ -37,29 +37,34 @@ public class CattleController : ControllerBase
             query = query.Where(c => c.EstablishmentId == establishmentId.Value);
         }
 
-        var cattle = await query
-            .Select(c => new CattleDto
-            {
-                Id = c.Id,
-                Caravan = c.Caravan,
-                Name = c.Name,
-                Weight = c.Weight,
-                Origin = c.Origin,
-                Age = c.Age,
-                Gender = c.Gender,
-                GDM = c.GDM,
-                EstablishmentId = c.EstablishmentId,
-                EstablishmentName = c.Establishment!.Name,
-                ImageCount = c.Images.Count,
-                VideoCount = c.Videos.Count,
-                CustomData = c.CustomDataValues.ToDictionary(
+        // 1. Execute Query and bring entities to memory
+        var cattleEntities = await query.ToListAsync();
+
+        // 2. Map to DTO in memory (Client-side evaluation)
+        var cattleDtos = cattleEntities.Select(c => new CattleDto
+        {
+            Id = c.Id,
+            Caravan = c.Caravan,
+            Name = c.Name,
+            Weight = c.Weight,
+            Origin = c.Origin,
+            Age = c.Age,
+            Gender = c.Gender,
+            GDM = c.GDM,
+            EstablishmentId = c.EstablishmentId,
+            EstablishmentName = c.Establishment?.Name ?? "Sin Nombre",
+            ImageCount = c.Images.Count,
+            VideoCount = c.Videos.Count,
+            // Now ToDictionary works because we are in memory
+            CustomData = c.CustomDataValues
+                .Where(cdv => cdv.CustomDataColumn != null) // Safety check
+                .ToDictionary(
                     cdv => cdv.CustomDataColumn!.ColumnName,
                     cdv => cdv.Value
                 )
-            })
-            .ToListAsync();
+        }).ToList();
 
-        return Ok(cattle);
+        return Ok(cattleDtos);
     }
 
     [HttpGet("{id}")]

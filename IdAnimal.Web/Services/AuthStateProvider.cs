@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Text.Json;
+using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 
@@ -7,66 +9,49 @@ namespace IdAnimal.Web.Services;
 public class AuthStateProvider : AuthenticationStateProvider
 {
     private readonly ProtectedLocalStorage _localStorage;
-    private const string TokenKey = "authToken";
-    private const string UserIdKey = "userId";
-    private const string EmailKey = "email";
-    private const string FullNameKey = "fullName";
+    private readonly HttpClient _httpClient;
+    private AuthenticationState? _cachedState; // 1. Memory Cache
 
-    public AuthStateProvider(ProtectedLocalStorage localStorage)
+    private const string TokenKey = "authToken";
+
+    public AuthStateProvider(ProtectedLocalStorage localStorage, HttpClient httpClient)
     {
         _localStorage = localStorage;
+        _httpClient = httpClient;
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
+        // 2. Return cached state if we have it (Super fast, no JS Interop needed)
+        if (_cachedState != null)
+        {
+            return _cachedState;
+        }
+
         try
         {
-            var token = await GetTokenAsync();
-            var userId = await GetUserIdAsync();
-            var email = await GetEmailAsync();
-            var fullName = await GetFullNameAsync();
+            // 3. Only read from storage if we don't have it in memory yet (e.g. on Page Refresh)
+            var tokenResult = await _localStorage.GetAsync<string>(TokenKey);
 
-            if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(userId))
+            if (tokenResult.Success && !string.IsNullOrEmpty(tokenResult.Value))
             {
-                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                var token = tokenResult.Value;
+                var identity = new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt");
+                var user = new ClaimsPrincipal(identity);
+                
+                // Set the auth header for future requests
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                _cachedState = new AuthenticationState(user);
+                return _cachedState;
             }
-
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, userId),
-                new Claim(ClaimTypes.Email, email ?? ""),
-                new Claim(ClaimTypes.Name, fullName ?? "")
-            };
-
-            var identity = new ClaimsIdentity(claims, "jwt");
-            var user = new ClaimsPrincipal(identity);
-
-            return new AuthenticationState(user);
         }
         catch
         {
-            return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+            // If LocalStorage fails (e.g. during pre-rendering), return Anonymous
         }
-    }
 
-    public async Task LoginAsync(string token, int userId, string email, string fullName)
-    {
-        await _localStorage.SetAsync(TokenKey, token);
-        await _localStorage.SetAsync(UserIdKey, userId.ToString());
-        await _localStorage.SetAsync(EmailKey, email);
-        await _localStorage.SetAsync(FullNameKey, fullName);
-
-        NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
-    }
-
-    public async Task LogoutAsync()
-    {
-        await _localStorage.DeleteAsync(TokenKey);
-        await _localStorage.DeleteAsync(UserIdKey);
-        await _localStorage.DeleteAsync(EmailKey);
-        await _localStorage.DeleteAsync(FullNameKey);
-
-        NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+        return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
     }
 
     public async Task<string?> GetTokenAsync()
@@ -82,42 +67,47 @@ public class AuthStateProvider : AuthenticationStateProvider
         }
     }
 
-    public async Task<string?> GetUserIdAsync()
+    public async Task LoginAsync(string token)
     {
-        try
-        {
-            var result = await _localStorage.GetAsync<string>(UserIdKey);
-            return result.Success ? result.Value : null;
-        }
-        catch
-        {
-            return null;
-        }
+        // 4. Update Memory IMMEDIATELY
+        var identity = new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt");
+        var user = new ClaimsPrincipal(identity);
+        _cachedState = new AuthenticationState(user);
+
+        // 5. Notify the UI instantly (doesn't wait for disk write)
+        NotifyAuthenticationStateChanged(Task.FromResult(_cachedState));
+
+        // 6. Set header and save to storage in background
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        await _localStorage.SetAsync(TokenKey, token);
     }
 
-    public async Task<string?> GetEmailAsync()
+    public async Task LogoutAsync()
     {
-        try
-        {
-            var result = await _localStorage.GetAsync<string>(EmailKey);
-            return result.Success ? result.Value : null;
-        }
-        catch
-        {
-            return null;
-        }
+        _cachedState = null;
+        _httpClient.DefaultRequestHeaders.Authorization = null;
+        await _localStorage.DeleteAsync(TokenKey);
+
+        var anonymous = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+        NotifyAuthenticationStateChanged(Task.FromResult(anonymous));
     }
 
-    public async Task<string?> GetFullNameAsync()
+    // Helper to extract data directly from the Token
+    private IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
     {
-        try
+        var payload = jwt.Split('.')[1];
+        var jsonBytes = ParseBase64WithoutPadding(payload);
+        var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes);
+        return keyValuePairs.Select(kvp => new Claim(kvp.Key, kvp.Value.ToString()));
+    }
+
+    private byte[] ParseBase64WithoutPadding(string base64)
+    {
+        switch (base64.Length % 4)
         {
-            var result = await _localStorage.GetAsync<string>(FullNameKey);
-            return result.Success ? result.Value : null;
+            case 2: base64 += "=="; break;
+            case 3: base64 += "="; break;
         }
-        catch
-        {
-            return null;
-        }
+        return Convert.FromBase64String(base64);
     }
 }

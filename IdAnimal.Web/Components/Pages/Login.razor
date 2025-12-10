@@ -4,7 +4,7 @@
 @inject AuthService AuthService
 @inject AuthStateProvider AuthStateProvider
 @inject NavigationManager Navigation
-
+@rendermode InteractiveServer
 <PageTitle>Login - IdAnimal</PageTitle>
 
 <div class="login-container">
@@ -20,8 +20,7 @@
                 @errorMessage
             </div>
         }
-
-        <EditForm Model="@loginRequest" OnValidSubmit="@HandleLogin">
+        <EditForm Model="@loginRequest" OnValidSubmit="@HandleLogin" FormName="LoginForm">
             <DataAnnotationsValidator />
 
             <div class="form-group">
@@ -125,7 +124,7 @@
 
             if (response != null)
             {
-                await AuthStateProvider.LoginAsync(response.Token, response.UserId, response.Email, response.FullName);
+                await AuthStateProvider.LoginAsync(response.Token); 
                 Navigation.NavigateTo("/");
             }
             else

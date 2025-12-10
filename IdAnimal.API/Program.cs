@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using IdAnimal.API.Data;
 using IdAnimal.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -12,6 +12,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// [OPTIONAL] Add Logging Service specifically (usually added by default, but good to be explicit if customizing)
+builder.Services.AddLogging();
+
+// ... (Your existing Database and Auth configuration remains here) ...
 // Database configuration
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
@@ -42,23 +46,46 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
-
-// CORS configuration
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
     });
 });
-
-// Register services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICloudStorageService, CloudinaryService>();
 
 var app = builder.Build();
+
+// --- 🟢 NEW LOGGING MIDDLEWARE STARTS HERE ---
+// This must be the very first thing in the pipeline to catch everything
+app.Use(async (context, next) =>
+{
+    // 1. Get the Logger
+    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+
+    // 2. Log the Incoming Request
+    var method = context.Request.Method;
+    var path = context.Request.Path;
+    logger.LogInformation($"➡️ Incoming Request: {method} {path}");
+
+    // 3. Call the next middleware in the pipeline
+    await next();
+
+    // 4. Log the Outgoing Response
+    var statusCode = context.Response.StatusCode;
+
+    if (statusCode >= 400)
+    {
+        logger.LogWarning($"⬅️ Server Response: {statusCode} (Error/Bad Request) for {method} {path}");
+    }
+    else
+    {
+        logger.LogInformation($"⬅️ Server Response: {statusCode} (Success) for {method} {path}");
+    }
+});
+// --- 🔴 LOGGING MIDDLEWARE ENDS HERE ---
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

@@ -1,0 +1,9 @@
+.aider*
+
+.vs/
+IdAnimal.API/bin/
+IdAnimal.API/obj/
+IdAnimal.Shared/bin/
+IdAnimal.Shared/obj/
+IdAnimal.Web/obj/
+IdAnimal.Web/bin/

@@ -4,7 +4,7 @@
 @inject AuthService AuthService
 @inject AuthStateProvider AuthStateProvider
 @inject NavigationManager Navigation
-
+@rendermode InteractiveServer
 <PageTitle>Registro - IdAnimal</PageTitle>
 
 <div class="login-container">
@@ -21,7 +21,7 @@
             </div>
         }
 
-        <EditForm Model="@registerRequest" OnValidSubmit="@HandleRegister">
+        <EditForm Model="@registerRequest" OnValidSubmit="@HandleRegister" FormName="RegisterForm">
             <DataAnnotationsValidator />
 
             <div class="form-group">
@@ -131,7 +131,7 @@
 
             if (response != null)
             {
-                await AuthStateProvider.LoginAsync(response.Token, response.UserId, response.Email, response.FullName);
+                await AuthStateProvider.LoginAsync(response.Token); 
                 Navigation.NavigateTo("/");
             }
             else
