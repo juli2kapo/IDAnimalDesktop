@@ -1,3 +1,4 @@
+using IdAnimal.API.Extensions;
 using IdAnimal.API.Data;
 using IdAnimal.Shared.DTOs;
 using IdAnimal.Shared.Models;
@@ -11,7 +12,6 @@ namespace IdAnimal.API.Controllers;
 public class CustomDataColumnsController : ControllerBase
 {
     private readonly AppDbContext _context;
-    private const int DefaultUserId = 1; // Since we removed auth, use a default user
 
     public CustomDataColumnsController(AppDbContext context)
     {
@@ -22,7 +22,7 @@ public class CustomDataColumnsController : ControllerBase
     public async Task<ActionResult<List<CustomDataColumnDto>>> GetAll()
     {
         var columns = await _context.CustomDataColumns
-            .Where(cdc => cdc.UserId == DefaultUserId)
+            .Where(cdc => cdc.UserId == User.GetId())
             .OrderBy(cdc => cdc.ColumnName)
             .Select(c => new CustomDataColumnDto
             {
@@ -39,7 +39,7 @@ public class CustomDataColumnsController : ControllerBase
     public async Task<ActionResult<CustomDataColumnDto>> GetById(int id)
     {
         var column = await _context.CustomDataColumns
-            .Where(cdc => cdc.Id == id && cdc.UserId == DefaultUserId)
+            .Where(cdc => cdc.Id == id && cdc.UserId == User.GetId())
             .Select(c => new CustomDataColumnDto
             {
                 Id = c.Id,
@@ -60,7 +60,7 @@ public class CustomDataColumnsController : ControllerBase
     public async Task<ActionResult<CustomDataColumnDto>> Create([FromBody] CustomDataColumnDto dto)
     {
         var exists = await _context.CustomDataColumns
-            .AnyAsync(cdc => cdc.ColumnName == dto.ColumnName && cdc.UserId == DefaultUserId);
+            .AnyAsync(cdc => cdc.ColumnName == dto.ColumnName && cdc.UserId == User.GetId());
 
         if (exists)
         {
@@ -71,7 +71,7 @@ public class CustomDataColumnsController : ControllerBase
         {
             ColumnName = dto.ColumnName,
             DataType = dto.DataType,
-            UserId = DefaultUserId,
+            UserId = User.GetId(),
             CreatedAt = DateTime.UtcNow
         };
 
@@ -86,7 +86,7 @@ public class CustomDataColumnsController : ControllerBase
     public async Task<IActionResult> Update(int id, [FromBody] CustomDataColumnDto dto)
     {
         var column = await _context.CustomDataColumns
-            .FirstOrDefaultAsync(cdc => cdc.Id == id && cdc.UserId == DefaultUserId);
+            .FirstOrDefaultAsync(cdc => cdc.Id == id && cdc.UserId == User.GetId());
 
         if (column == null)
         {
@@ -105,7 +105,7 @@ public class CustomDataColumnsController : ControllerBase
     public async Task<IActionResult> Delete(int id)
     {
         var column = await _context.CustomDataColumns
-            .FirstOrDefaultAsync(cdc => cdc.Id == id && cdc.UserId == DefaultUserId);
+            .FirstOrDefaultAsync(cdc => cdc.Id == id && cdc.UserId == User.GetId());
 
         if (column == null)
         {

@@ -3,6 +3,7 @@ using IdAnimal.Shared.DTOs;
 using IdAnimal.Shared.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using IdAnimal.API.Extensions;
 
 namespace IdAnimal.API.Controllers;
 
@@ -11,8 +12,6 @@ namespace IdAnimal.API.Controllers;
 public class EstablishmentsController : ControllerBase
 {
     private readonly AppDbContext _context;
-    private const int DefaultUserId = 1; // Since we removed auth, use a default user
-
     public EstablishmentsController(AppDbContext context)
     {
         _context = context;
@@ -22,7 +21,7 @@ public class EstablishmentsController : ControllerBase
     public async Task<ActionResult<List<EstablishmentDto>>> GetAll()
     {
         Console.WriteLine("Got a GET request");
-        var userId = DefaultUserId;
+        var userId = User.GetId();
         var establishments = await _context.Establishments
             .Where(e => e.UserId == userId)
             .Select(e => new EstablishmentDto
@@ -44,7 +43,7 @@ public class EstablishmentsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<EstablishmentDto>> GetById(int id)
     {
-        var userId = DefaultUserId;
+        var userId = User.GetId();
         var establishment = await _context.Establishments
             .Where(e => e.Id == id && e.UserId == userId)
             .Select(e => new EstablishmentDto
@@ -71,7 +70,7 @@ public class EstablishmentsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<EstablishmentDto>> Create([FromBody] EstablishmentDto dto)
     {
-        var userId = DefaultUserId;
+        var userId = User.GetId();
         var establishment = new Establishment
         {
             Name = dto.Name,
@@ -95,7 +94,7 @@ public class EstablishmentsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] EstablishmentDto dto)
     {
-        var userId = DefaultUserId;
+        var userId = User.GetId();
         var establishment = await _context.Establishments
             .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId);
 
@@ -119,7 +118,7 @@ public class EstablishmentsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var userId = DefaultUserId;
+        var userId = User.GetId();
         var establishment = await _context.Establishments
             .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId);
 

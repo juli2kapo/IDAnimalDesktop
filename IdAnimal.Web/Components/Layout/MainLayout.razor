@@ -5,7 +5,6 @@
 @inject NavigationManager NavManager
 
 <div class="page">
-    @* ✅ 1. Wrap Sidebar in AuthorizeView so only logged-in users see it *@
     <AuthorizeView>
         <Authorized>
             <div class="sidebar">
@@ -15,15 +14,23 @@
     </AuthorizeView>
 
     <main>
-        @* ✅ 2. Add a Header Bar with Logout Button *@
-        <div class="top-row px-4">
+        @* ✅ Updated Header: Flexbox for alignment and better styling *@
+        <div class="top-row px-4 d-flex justify-content-end align-items-center gap-3">
             <AuthorizeView>
                 <Authorized>
-                    <span>Hola, @context.User.Identity?.Name</span>
-                    <button class="btn btn-link" @onclick="Logout">Cerrar Sesión</button>
+                    <div class="d-flex align-items-center gap-2">
+                        @* Optional: You can add a user icon here if you use something like FontAwesome *@
+                        <i class="fas fa-user-circle fs-4"></i>
+                        
+                        <span class="fw-bold">Hola, @context.User.Identity?.Name</span>
+                    </div>
+                    
+                    <button class="btn btn-outline-danger btn-sm" @onclick="Logout">
+                        Cerrar Sesión
+                    </button>
                 </Authorized>
                 <NotAuthorized>
-                    <a href="login">Iniciar Sesión</a>
+                    <a href="login" class="btn btn-primary btn-sm">Iniciar Sesión</a>
                 </NotAuthorized>
             </AuthorizeView>
         </div>
@@ -38,6 +45,6 @@
     private async Task Logout()
     {
         await AuthStateProvider.LogoutAsync();
-        NavManager.NavigateTo("/login");
+        NavManager.NavigateTo("/login", forceLoad: true); 
     }
 }

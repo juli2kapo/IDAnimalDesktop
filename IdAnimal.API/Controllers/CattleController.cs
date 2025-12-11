@@ -1,9 +1,12 @@
+using IdAnimal.API.Extensions;
 using IdAnimal.API.Data;
 using IdAnimal.API.Services;
 using IdAnimal.Shared.DTOs;
 using IdAnimal.Shared.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace IdAnimal.API.Controllers;
 
@@ -21,20 +24,10 @@ public class CattleController : ControllerBase
         _cloudStorage = cloudStorage;
     }
 
-    private int GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (int.TryParse(userIdClaim, out int userId))
-        {
-            return userId;
-        }
-        throw new UnauthorizedAccessException("Invalid token: User ID missing.");
-    }
-
     [HttpGet]
     public async Task<ActionResult<List<CattleDto>>> GetAll([FromQuery] int? establishmentId = null)
     {
-        var userId = GetCurrentUserId();
+        var userId = User.GetId();
         var query = _context.Cattle
             .Include(c => c.Establishment)
             .Include(c => c.Images)
@@ -81,7 +74,7 @@ public class CattleController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<CattleDetailDto>> GetById(int id)
     {
-        var userId = GetCurrentUserId();
+        var userId = User.GetId();
         var cattle = await _context.Cattle
             .Include(c => c.Establishment)
             .Include(c => c.Images)
@@ -139,7 +132,7 @@ public class CattleController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<CattleDto>> Create([FromBody] CattleDto dto)
     {
-        var userId = GetCurrentUserId();
+        var userId = User.GetId();
         var establishment = await _context.Establishments
             .FirstOrDefaultAsync(e => e.Id == dto.EstablishmentId && e.UserId == userId);
 
@@ -178,7 +171,7 @@ public class CattleController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] CattleDto dto)
     {
-        var userId = GetCurrentUserId();;
+        var userId = User.GetId();;
         var cattle = await _context.Cattle
             .Include(c => c.Establishment)
             .FirstOrDefaultAsync(c => c.Id == id && c.Establishment!.UserId == userId);
@@ -210,7 +203,7 @@ public class CattleController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var userId = GetCurrentUserId();
+        var userId = User.GetId();
         var cattle = await _context.Cattle
             .Include(c => c.Establishment)
             .FirstOrDefaultAsync(c => c.Id == id && c.Establishment!.UserId == userId);
@@ -229,7 +222,7 @@ public class CattleController : ControllerBase
     [HttpPost("upload-image")]
     public async Task<IActionResult> UploadImage([FromBody] UploadImageRequest request)
     {
-        var userId = GetCurrentUserId();
+        var userId = User.GetId();
         var cattle = await _context.Cattle
             .Include(c => c.Establishment)
             .FirstOrDefaultAsync(c => c.Id == request.CattleId && c.Establishment!.UserId == userId);

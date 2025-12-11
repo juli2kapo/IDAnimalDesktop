@@ -12,15 +12,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// [OPTIONAL] Add Logging Service specifically (usually added by default, but good to be explicit if customizing)
 builder.Services.AddLogging();
 
-// ... (Your existing Database and Auth configuration remains here) ...
-// Database configuration
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        sqlOptions => sqlOptions.EnableRetryOnFailure()
+    options.UseSqlite(
+        builder.Configuration.GetConnectionString("DefaultConnection")
     ));
 
 // JWT Authentication
@@ -101,5 +97,36 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    var context = services.GetRequiredService<AppDbContext>();
+
+    try
+    {
+        var dbPath = Path.Combine(AppContext.BaseDirectory, "IdAnimal.db");
+        
+        if (File.Exists(dbPath))
+        {
+             logger.LogInformation($"✅ Database file found at: {dbPath}");
+        }
+        else
+        {
+             logger.LogWarning($"⚠️ Database file NOT found at: {dbPath}. Creating it now...");
+             context.Database.Migrate(); 
+        }
+
+        logger.LogInformation("🔄 Attempting to apply migrations...");
+        
+        
+        logger.LogInformation("✅ Database migration applied successfully.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogCritical(ex, "❌ FATAL ERROR: Could not create or migrate the database.");
+    }
+}
 
 app.Run();

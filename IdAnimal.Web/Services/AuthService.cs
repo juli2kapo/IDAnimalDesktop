@@ -13,7 +13,8 @@ public class AuthService
         _httpClient = httpClient;
         _configuration = configuration;
 
-        var baseUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5001";
+        // var baseUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5001";
+        var baseUrl = "https://api.idanimal.tech";
         _httpClient.BaseAddress = new Uri(baseUrl);
     }
 

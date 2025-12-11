@@ -15,14 +15,14 @@ namespace IdAnimal.API.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Email = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    FullName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    LastLoginAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Email = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
+                    PasswordHash = table.Column<string>(type: "TEXT", nullable: false),
+                    FullName = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    LastLoginAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -33,12 +33,12 @@ namespace IdAnimal.API.Migrations
                 name: "CustomDataColumns",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ColumnName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    DataType = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    ColumnName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    DataType = table.Column<string>(type: "TEXT", nullable: false),
+                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -55,15 +55,15 @@ namespace IdAnimal.API.Migrations
                 name: "Establishments",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    RegisterDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    EstablishmentRegisterDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Province = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    PostalCode = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Renspa = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    UserId = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
+                    RegisterDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    EstablishmentRegisterDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Province = table.Column<string>(type: "TEXT", nullable: false),
+                    PostalCode = table.Column<string>(type: "TEXT", nullable: false),
+                    Renspa = table.Column<string>(type: "TEXT", nullable: false),
+                    UserId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -80,16 +80,16 @@ namespace IdAnimal.API.Migrations
                 name: "Cattle",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Caravan = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Weight = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Origin = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Age = table.Column<int>(type: "int", nullable: true),
-                    Gender = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    GDM = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    EstablishmentId = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Caravan = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    Weight = table.Column<decimal>(type: "TEXT", nullable: true),
+                    Origin = table.Column<string>(type: "TEXT", nullable: true),
+                    Age = table.Column<int>(type: "INTEGER", nullable: true),
+                    Gender = table.Column<string>(type: "TEXT", nullable: true),
+                    GDM = table.Column<decimal>(type: "TEXT", nullable: true),
+                    EstablishmentId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -106,11 +106,11 @@ namespace IdAnimal.API.Migrations
                 name: "CattleFullImages",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Path = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    AddedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CattleId = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Path = table.Column<string>(type: "TEXT", nullable: false),
+                    AddedDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    CattleId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -127,13 +127,13 @@ namespace IdAnimal.API.Migrations
                 name: "CattleImages",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Path = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    AddedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CattleId = table.Column<int>(type: "int", nullable: false),
-                    Descriptors = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Keypoints = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Path = table.Column<string>(type: "TEXT", nullable: false),
+                    AddedDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    CattleId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Descriptors = table.Column<string>(type: "TEXT", nullable: true),
+                    Keypoints = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -150,11 +150,11 @@ namespace IdAnimal.API.Migrations
                 name: "CattleVideos",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Path = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    AddedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CattleId = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Path = table.Column<string>(type: "TEXT", nullable: false),
+                    AddedDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    CattleId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -171,11 +171,11 @@ namespace IdAnimal.API.Migrations
                 name: "CustomDataValues",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    CustomDataColumnId = table.Column<int>(type: "int", nullable: false),
-                    CattleId = table.Column<int>(type: "int", nullable: false),
-                    Value = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    CustomDataColumnId = table.Column<int>(type: "INTEGER", nullable: false),
+                    CattleId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Value = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {

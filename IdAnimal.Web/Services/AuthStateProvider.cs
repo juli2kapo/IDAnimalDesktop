@@ -20,6 +20,31 @@ public class AuthStateProvider : AuthenticationStateProvider
         _httpClient = httpClient;
     }
 
+    private IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
+    {
+        var payload = jwt.Split('.')[1];
+        var jsonBytes = ParseBase64WithoutPadding(payload);
+        var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes);
+        
+        var claims = new List<Claim>();
+
+        if (keyValuePairs != null)
+        {
+            foreach (var kvp in keyValuePairs)
+            {
+                // Fix: Map 'name' or 'unique_name' to standard ClaimTypes.Name
+                if (kvp.Key == "name" || kvp.Key == "unique_name")
+                {
+                    claims.Add(new Claim(ClaimTypes.Name, kvp.Value.ToString()));
+                }
+
+                claims.Add(new Claim(kvp.Key, kvp.Value.ToString()));
+            }
+        }
+
+        return claims;
+    }
+
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
         // 2. Return cached state if we have it (Super fast, no JS Interop needed)
@@ -93,13 +118,13 @@ public class AuthStateProvider : AuthenticationStateProvider
     }
 
     // Helper to extract data directly from the Token
-    private IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
-    {
-        var payload = jwt.Split('.')[1];
-        var jsonBytes = ParseBase64WithoutPadding(payload);
-        var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes);
-        return keyValuePairs.Select(kvp => new Claim(kvp.Key, kvp.Value.ToString()));
-    }
+    // private IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
+    // {
+    //     var payload = jwt.Split('.')[1];
+    //     var jsonBytes = ParseBase64WithoutPadding(payload);
+    //     var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes);
+    //     return keyValuePairs.Select(kvp => new Claim(kvp.Key, kvp.Value.ToString()));
+    // }
 
     private byte[] ParseBase64WithoutPadding(string base64)
     {
