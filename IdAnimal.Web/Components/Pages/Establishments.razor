@@ -76,7 +76,7 @@
                                 <span class="badge bg-primary">@establishment.CattleCount</span>
                             </td>
                             <td>
-                                <div class="btn-group" role="group" @onclick:stopPropagation="true">
+                                <div class="d-flex gap-2" @onclick:stopPropagation="true">
                                     <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEditModal(establishment)">
                                         <i class="bi bi-pencil"></i>
                                     </button>
@@ -84,6 +84,7 @@
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
+
                             </td>
                         </tr>
                     }

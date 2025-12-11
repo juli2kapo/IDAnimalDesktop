@@ -85,6 +85,20 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
 }
 
+.btn-danger {
+    color: white !important;
+    font-weight: bold;
+    padding: 14px 20px;
+    font-size: 16px;
+    box-shadow: var(--shadow) !important;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
 .btn-outline-primary {
     background-color: transparent !important;
     border: 2px solid var(--primary-orange) !important;

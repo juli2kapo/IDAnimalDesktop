@@ -1,9 +1,10 @@
 using IdAnimal.Web.Components;
 using IdAnimal.Web.Services;
 using Microsoft.AspNetCore.Components.Authorization;
+using Bold.Licensing;
 
 var builder = WebApplication.CreateBuilder(args);
-
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JFaF1cXGFCf1FpRGRGfV5ycUVHYVZVTHxfRk0DNHVRdkdmWH1fcHZWQmhcVUByWUtWYEg=");
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -14,6 +15,7 @@ builder.Services.AddScoped<AuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(provider => 
     provider.GetRequiredService<AuthStateProvider>());
 builder.Services.AddAuthorization();
+builder.Services.AddScoped<ReportGenerationService>();
 
 // Add HTTP clients
 builder.Services.AddHttpClient<AuthService>();

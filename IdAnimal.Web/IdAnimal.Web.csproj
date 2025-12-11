@@ -5,9 +5,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="BoldReports.Net.Core" Version="11.1.17" />
+    <PackageReference Include="BoldReports.Net.Core" Version="12.1.14" />
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="CloudinaryDotNet" Version="1.27.8" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.1" />
   </ItemGroup>
 
   <PropertyGroup>

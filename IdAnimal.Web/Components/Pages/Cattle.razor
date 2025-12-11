@@ -225,7 +225,8 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Peso (kg)</label>
-                                <InputNumber class="form-control" @bind-Value="currentCattle.Weight" />
+                                <InputNumber class="form-control" @bind-Value="currentCattle.Weight" onkeydown="preventNonNumeric(event)" />
+                                
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Origen</label>
@@ -243,7 +244,15 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">GDM</label>
-                                <InputNumber class="form-control" @bind-Value="currentCattle.GDM" />
+                                <InputNumber class="form-control" @bind-Value="currentCattle.GDM" onkeydown="preventNonNumeric(event)" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Edad</label>
+                                <InputNumber class="form-control" @bind-Value="currentCattle.Age" onkeydown="preventNonNumeric(event)" />
+                            </div>
+                            <div class="col-md-6 mb-3">
                             </div>
                         </div>
                     </div>

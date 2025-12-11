@@ -207,7 +207,7 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Peso (kg)</label>
-                                <InputNumber class="form-control" @bind-Value="cattle.Weight" />
+                                <InputNumber class="form-control" @bind-Value="cattle.Weight" onkeydown="preventNonNumeric(event)" />
                             </div>
                         </div>
                         <div class="row">
@@ -227,11 +227,11 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">GDM</label>
-                                <InputNumber class="form-control" @bind-Value="cattle.GDM" />
+                                <InputNumber class="form-control" @bind-Value="cattle.GDM" onkeydown="preventNonNumeric(event)" />
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Edad</label>
-                                <InputNumber class="form-control" @bind-Value="cattle.Age" />
+                                <InputNumber class="form-control" @bind-Value="cattle.Age" onkeydown="preventNonNumeric(event)" />
                             </div>
                         </div>
                     </div>

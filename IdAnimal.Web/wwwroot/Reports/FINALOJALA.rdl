@@ -1,0 +1,489 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <Height>8.9375in</Height>
+        <ReportItems>
+          <Textbox Name="ReportTitle">
+            <Left>0.54167in</Left>
+            <Top>0.03109in</Top>
+            <Height>0.50000in</Height>
+            <Width>8.3125in</Width>
+            <Style>
+              <FontFamily>Segoe UI</FontFamily>
+              <PaddingTop>10pt</PaddingTop>
+              <PaddingBottom>10pt</PaddingBottom>
+            </Style>
+            <CanGrow>true</CanGrow>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>REPORTE DE GANADO</Value>
+                    <Style>
+                      <FontFamily>Segoe UI</FontFamily>
+                      <FontSize>20pt</FontSize>
+                      <FontWeight>Light</FontWeight>
+                      <Color>#2874A6</Color>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+                <Style>
+                  <TextAlign>Center</TextAlign>
+                </Style>
+              </Paragraph>
+            </Paragraphs>
+          </Textbox>
+          
+          <Rectangle Name="KpiRectangle">
+            <Left>0.19792in</Left>
+            <Top>0.74984in</Top>
+            <Height>4.82292in</Height>
+            <Width>8.90186in</Width>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+            </Style>
+            <ReportItems>
+              <Rectangle Name="KpiAvgWeight">
+                <Left>5.38542in</Left>
+                <Top>0.12061in</Top>
+                <Height>0.75000in</Height>
+                <Width>2.36247in</Width>
+                <Style>
+                  <BackgroundColor>#FFFFFF</BackgroundColor>
+                  <Border>
+                    <Color>#DDDDDD</Color>
+                    <Style>Solid</Style>
+                    <Width>1pt</Width>
+                  </Border>
+                </Style>
+                <ReportItems>
+                  <Textbox Name="AvgWeightValue">
+                    <Left>0.12077in</Left>
+                    <Top>0.37077in</Top>
+                    <Height>0.30000in</Height>
+                    <Width>2.1in</Width>
+                    <Style>
+                      <VerticalAlign>Middle</VerticalAlign>
+                    </Style>
+                    <Paragraphs>
+                      <Paragraph>
+                        <TextRuns>
+                          <TextRun>
+                            <Value>=IIF(IsNothing(Avg(Fields!Weight.Value, "CattleDataSet")), "-", Avg(Fields!Weight.Value, "CattleDataSet"))</Value>
+                            <Style>
+                              <FontFamily>Segoe UI</FontFamily>
+                              <FontSize>16pt</FontSize>
+                              <FontWeight>Bold</FontWeight>
+                              <Format>N2</Format>
+                              <Color>#2874A6</Color>
+                            </Style>
+                          </TextRun>
+                        </TextRuns>
+                        <Style>
+                          <TextAlign>Center</TextAlign>
+                        </Style>
+                      </Paragraph>
+                    </Paragraphs>
+                  </Textbox>
+                  <Textbox Name="AvgWeightLabel">
+                    <Left>0.12077in</Left>
+                    <Top>0.12077in</Top>
+                    <Height>0.20000in</Height>
+                    <Width>2.1in</Width>
+                    <Style>
+                      <VerticalAlign>Middle</VerticalAlign>
+                    </Style>
+                    <Paragraphs>
+                      <Paragraph>
+                        <TextRuns>
+                          <TextRun>
+                            <Value>Peso Promedio (kg)</Value>
+                            <Style>
+                              <FontFamily>Segoe UI</FontFamily>
+                              <FontSize>9pt</FontSize>
+                              <FontWeight>Normal</FontWeight>
+                              <Color>#666666</Color>
+                              <TextDecoration>None</TextDecoration>
+                            </Style>
+                          </TextRun>
+                        </TextRuns>
+                        <Style>
+                          <TextAlign>Center</TextAlign>
+                        </Style>
+                      </Paragraph>
+                    </Paragraphs>
+                  </Textbox>
+                </ReportItems>
+              </Rectangle>
+
+              <Rectangle Name="KpiTotalCattle">
+                <Left>1.24561in</Left>
+                <Top>0.11003in</Top>
+                <Height>0.71257in</Height>
+                <Width>2.44971in</Width>
+                <Style>
+                  <BackgroundColor>#FFFFFF</BackgroundColor>
+                  <Border>
+                    <Color>#DDDDDD</Color>
+                    <Style>Solid</Style>
+                    <Width>1pt</Width>
+                  </Border>
+                </Style>
+                <ReportItems>
+                  <Textbox Name="TotalCattleValue">
+                    <Left>0.10000in</Left>
+                    <Top>0.35000in</Top>
+                    <Height>0.30000in</Height>
+                    <Width>2.1in</Width>
+                    <Style>
+                      <VerticalAlign>Middle</VerticalAlign>
+                    </Style>
+                    <Paragraphs>
+                      <Paragraph>
+                        <TextRuns>
+                          <TextRun>
+                            <Value>=CountRows("CattleDataSet")</Value>
+                            <Style>
+                              <FontFamily>Segoe UI</FontFamily>
+                              <FontSize>16pt</FontSize>
+                              <FontWeight>Bold</FontWeight>
+                              <Color>#2874A6</Color>
+                            </Style>
+                          </TextRun>
+                        </TextRuns>
+                        <Style>
+                          <TextAlign>Center</TextAlign>
+                        </Style>
+                      </Paragraph>
+                    </Paragraphs>
+                  </Textbox>
+                  <Textbox Name="TotalCattleLabel">
+                    <Left>0.10000in</Left>
+                    <Top>0.10000in</Top>
+                    <Height>0.20000in</Height>
+                    <Width>2.1in</Width>
+                    <Style>
+                      <VerticalAlign>Middle</VerticalAlign>
+                    </Style>
+                    <Paragraphs>
+                      <Paragraph>
+                        <TextRuns>
+                          <TextRun>
+                            <Value>Total de Animales</Value>
+                            <Style>
+                              <FontFamily>Segoe UI</FontFamily>
+                              <FontSize>9pt</FontSize>
+                              <FontWeight>Normal</FontWeight>
+                              <Color>#666666</Color>
+                            </Style>
+                          </TextRun>
+                        </TextRuns>
+                        <Style>
+                          <TextAlign>Center</TextAlign>
+                        </Style>
+                      </Paragraph>
+                    </Paragraphs>
+                  </Textbox>
+                </ReportItems>
+              </Rectangle>
+
+              <Tablix Name="CattleTable">
+                <Left>0.30192in</Left>
+                <Top>1.0957in</Top>
+                <Height>0.54997in</Height>
+                <Width>8.29769in</Width>
+                <CustomProperties>
+                  <CustomProperty>
+                    <Name>MaxRowCount</Name>
+                    <Value>100000</Value>
+                  </CustomProperty>
+                  <CustomProperty>
+                    <Name>MaxColumnCount</Name>
+                    <Value>20</Value>
+                  </CustomProperty>
+                </CustomProperties>
+                <DataSetName>CattleDataSet</DataSetName>
+                <TablixBody>
+                  <TablixColumns>
+                    <TablixColumn><Width>1.71631in</Width></TablixColumn>
+                    <TablixColumn><Width>1.21582in</Width></TablixColumn>
+                    <TablixColumn><Width>1.71631in</Width></TablixColumn>
+                    <TablixColumn><Width>1.01579in</Width></TablixColumn>
+                    <TablixColumn><Width>1.21582in</Width></TablixColumn>
+                    <TablixColumn><Width>1.41764in</Width></TablixColumn>
+                  </TablixColumns>
+                  <TablixRows>
+                    <TablixRow>
+                      <Height>0.29997in</Height>
+                      <TablixCells>
+                        <TablixCell><CellContents><Textbox Name="CaravanHeader"><Style><BackgroundColor>#2874A6</BackgroundColor><PaddingLeft>5pt</PaddingLeft><VerticalAlign>Middle</VerticalAlign></Style><Paragraphs><Paragraph><TextRuns><TextRun><Value>Caravana</Value><Style><FontFamily>Segoe UI</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>White</Color></Style></TextRun></TextRuns><Style><TextAlign>Left</TextAlign></Style></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="WeightHeader"><Style><BackgroundColor>#2874A6</BackgroundColor><PaddingRight>5pt</PaddingRight><VerticalAlign>Middle</VerticalAlign></Style><Paragraphs><Paragraph><TextRuns><TextRun><Value>Peso (kg)</Value><Style><FontFamily>Segoe UI</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>White</Color></Style></TextRun></TextRuns><Style><TextAlign>Right</TextAlign></Style></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="OriginHeader"><Style><BackgroundColor>#2874A6</BackgroundColor><VerticalAlign>Middle</VerticalAlign></Style><Paragraphs><Paragraph><TextRuns><TextRun><Value>Origen</Value><Style><FontFamily>Segoe UI</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>White</Color></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="AgeHeader"><Style><BackgroundColor>#2874A6</BackgroundColor><VerticalAlign>Middle</VerticalAlign></Style><Paragraphs><Paragraph><TextRuns><TextRun><Value>Edad</Value><Style><FontFamily>Segoe UI</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>White</Color></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="GenderHeader"><Style><BackgroundColor>#2874A6</BackgroundColor><VerticalAlign>Middle</VerticalAlign></Style><Paragraphs><Paragraph><TextRuns><TextRun><Value>Género</Value><Style><FontFamily>Segoe UI</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>White</Color></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                        <TablixCell><CellContents><Textbox Name="GDMHeader"><Style><BackgroundColor>#2874A6</BackgroundColor><PaddingRight>5pt</PaddingRight><VerticalAlign>Middle</VerticalAlign></Style><Paragraphs><Paragraph><TextRuns><TextRun><Value>GDM</Value><Style><FontFamily>Segoe UI</FontFamily><FontSize>9pt</FontSize><FontWeight>Bold</FontWeight><Color>White</Color></Style></TextRun></TextRuns><Style><TextAlign>Right</TextAlign></Style></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                      </TablixCells>
+                    </TablixRow>
+                    <TablixRow>
+                      <Height>0.25000in</Height>
+                      <TablixCells>
+                        <TablixCell>
+                          <CellContents>
+                            <Textbox Name="Caravan">
+                              <Style>
+                                <BackgroundColor>=IIF(RowNumber(Nothing) Mod 2 = 0, "#F5F7F9", "White")</BackgroundColor>
+                                <Border><Color>#E5E7E9</Color><Style>Solid</Style></Border>
+                                <VerticalAlign>Middle</VerticalAlign>
+                                <PaddingLeft>5pt</PaddingLeft>
+                              </Style>
+                              <Paragraphs>
+                                <Paragraph>
+                                  <TextRuns>
+                                    <TextRun>
+                                      <Value>=Fields!Caravan.Value</Value>
+                                      <Style><FontFamily>Segoe UI</FontFamily><FontSize>9pt</FontSize><Color>#333333</Color></Style>
+                                    </TextRun>
+                                  </TextRuns>
+                                  <Style><TextAlign>Left</TextAlign></Style>
+                                </Paragraph>
+                              </Paragraphs>
+                            </Textbox>
+                          </CellContents>
+                        </TablixCell>
+                        <TablixCell>
+                          <CellContents>
+                            <Textbox Name="Weight">
+                              <Style>
+                                <BackgroundColor>=IIF(RowNumber(Nothing) Mod 2 = 0, "#F5F7F9", "White")</BackgroundColor>
+                                <Border><Color>#E5E7E9</Color><Style>Solid</Style></Border>
+                                <VerticalAlign>Middle</VerticalAlign>
+                                <PaddingRight>5pt</PaddingRight>
+                              </Style>
+                              <Paragraphs>
+                                <Paragraph>
+                                  <TextRuns>
+                                    <TextRun>
+                                      <Value>=IIF(IsNothing(Fields!Weight.Value) OR Fields!Weight.Value = "NA" OR Fields!Weight.Value = "", "-", Fields!Weight.Value)</Value>
+                                      <Style><FontFamily>Segoe UI</FontFamily><FontSize>9pt</FontSize><Color>#333333</Color></Style>
+                                    </TextRun>
+                                  </TextRuns>
+                                  <Style><TextAlign>Right</TextAlign></Style>
+                                </Paragraph>
+                              </Paragraphs>
+                            </Textbox>
+                          </CellContents>
+                        </TablixCell>
+                        <TablixCell>
+                          <CellContents>
+                            <Textbox Name="Origin">
+                              <Style>
+                                <BackgroundColor>=IIF(RowNumber(Nothing) Mod 2 = 0, "#F5F7F9", "White")</BackgroundColor>
+                                <Border><Color>#E5E7E9</Color><Style>Solid</Style></Border>
+                                <VerticalAlign>Middle</VerticalAlign>
+                              </Style>
+                              <Paragraphs>
+                                <Paragraph>
+                                  <TextRuns>
+                                    <TextRun>
+                                      <Value>=IIF(IsNothing(Fields!Origin.Value) OR Fields!Origin.Value = "NA" OR Fields!Origin.Value = "", "—", Fields!Origin.Value)</Value>
+                                      <Style><FontFamily>Segoe UI</FontFamily><FontSize>9pt</FontSize><Color>#333333</Color></Style>
+                                    </TextRun>
+                                  </TextRuns>
+                                  <Style><TextAlign>Center</TextAlign></Style>
+                                </Paragraph>
+                              </Paragraphs>
+                            </Textbox>
+                          </CellContents>
+                        </TablixCell>
+                        <TablixCell>
+                          <CellContents>
+                            <Textbox Name="Age">
+                              <Style>
+                                <BackgroundColor>=IIF(RowNumber(Nothing) Mod 2 = 0, "#F5F7F9", "White")</BackgroundColor>
+                                <Border><Color>#E5E7E9</Color><Style>Solid</Style></Border>
+                                <VerticalAlign>Middle</VerticalAlign>
+                              </Style>
+                              <Paragraphs>
+                                <Paragraph>
+                                  <TextRuns>
+                                    <TextRun>
+                                      <Value>=IIF(IsNothing(Fields!Age.Value) OR Fields!Age.Value = "NA" OR Fields!Age.Value = "N/A" OR Fields!Age.Value = "", "-", Fields!Age.Value)</Value>
+                                      <Style><FontFamily>Segoe UI</FontFamily><FontSize>9pt</FontSize><Color>#333333</Color></Style>
+                                    </TextRun>
+                                  </TextRuns>
+                                  <Style><TextAlign>Center</TextAlign></Style>
+                                </Paragraph>
+                              </Paragraphs>
+                            </Textbox>
+                          </CellContents>
+                        </TablixCell>
+                        <TablixCell>
+                          <CellContents>
+                            <Textbox Name="Gender">
+                              <Style>
+                                <BackgroundColor>=IIF(RowNumber(Nothing) Mod 2 = 0, "#F5F7F9", "White")</BackgroundColor>
+                                <Border><Color>#E5E7E9</Color><Style>Solid</Style></Border>
+                                <VerticalAlign>Middle</VerticalAlign>
+                              </Style>
+                              <Paragraphs>
+                                <Paragraph>
+                                  <TextRuns>
+                                    <TextRun>
+                                      <Value>=IIF(IsNothing(Fields!Gender.Value) OR Fields!Gender.Value = "NA" OR Fields!Gender.Value = "", "—", Fields!Gender.Value)</Value>
+                                      <Style><FontFamily>Segoe UI</FontFamily><FontSize>9pt</FontSize><Color>#333333</Color></Style>
+                                    </TextRun>
+                                  </TextRuns>
+                                  <Style><TextAlign>Center</TextAlign></Style>
+                                </Paragraph>
+                              </Paragraphs>
+                            </Textbox>
+                          </CellContents>
+                        </TablixCell>
+                        <TablixCell>
+                          <CellContents>
+                            <Textbox Name="GDM">
+                              <Style>
+                                <BackgroundColor>=IIF(RowNumber(Nothing) Mod 2 = 0, "#F5F7F9", "White")</BackgroundColor>
+                                <Border><Color>#E5E7E9</Color><Style>Solid</Style></Border>
+                                <VerticalAlign>Middle</VerticalAlign>
+                                <PaddingRight>5pt</PaddingRight>
+                              </Style>
+                              <Paragraphs>
+                                <Paragraph>
+                                  <TextRuns>
+                                    <TextRun>
+                                      <Value>=IIF(IsNothing(Fields!GDM.Value) OR Fields!GDM.Value = "NA" OR Fields!GDM.Value = "", "-", Fields!GDM.Value)</Value>
+                                      <Style><FontFamily>Segoe UI</FontFamily><FontSize>9pt</FontSize><Color>#333333</Color></Style>
+                                    </TextRun>
+                                  </TextRuns>
+                                  <Style><TextAlign>Right</TextAlign></Style>
+                                </Paragraph>
+                              </Paragraphs>
+                            </Textbox>
+                          </CellContents>
+                        </TablixCell>
+                      </TablixCells>
+                    </TablixRow>
+                  </TablixRows>
+                </TablixBody>
+                <TablixColumnHierarchy>
+                  <TablixMembers>
+                    <TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember />
+                  </TablixMembers>
+                </TablixColumnHierarchy>
+                <TablixRowHierarchy>
+                  <TablixMembers>
+                    <TablixMember><KeepWithGroup>After</KeepWithGroup></TablixMember>
+                    <TablixMember><Group Name="Details" /></TablixMember>
+                  </TablixMembers>
+                </TablixRowHierarchy>
+              </Tablix>
+            </ReportItems>
+            <KeepTogether>true</KeepTogether>
+          </Rectangle>
+        </ReportItems>
+      </Body>
+      <Width>9.41667in</Width>
+      <Page>
+        <PageHeight>8.5in</PageHeight>
+        <PageWidth>11in</PageWidth>
+        <LeftMargin>0.50000in</LeftMargin>
+        <RightMargin>0.50000in</RightMargin>
+        <TopMargin>0.50000in</TopMargin>
+        <BottomMargin>0.50000in</BottomMargin>
+        <Style>
+          <FontFamily>Segoe UI</FontFamily>
+          <Border><Style>None</Style></Border>
+        </Style>
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <DataSources>
+    <DataSource Name="CattleDataSource">
+      <rd:SecurityType>None</rd:SecurityType>
+      <ConnectionProperties>
+        <DataProvider>System.Data.DataSet</DataProvider>
+        <ConnectString>/* Local Connection */</ConnectString>
+      </ConnectionProperties>
+    </DataSource>
+    <DataSource Name="CattleCSVDataSource">
+      <rd:SecurityType>None</rd:SecurityType>
+      <ConnectionProperties>
+        <DataProvider>CSV</DataProvider>
+        <ConnectString>{"Data":"","DataMode":"file","URL":"","IsCSVFirstRowHeader":true,"Separator":"comma","Delimiter":""}</ConnectString>
+        <rd:EmbeddedData>
+          <rd:Name>b7fcd90c-911f-4ea7-a5d6-0f76cfd56f2d</rd:Name>
+          <rd:Data>T2ZmbGluZSBMaWNlbnNlIFZhbGlkYXRpb246CgpPZmZsaW5lIGxpY2Vuc2Uga2V5OiBNREF5UURNeE16RXlaVE14TW1Vek1FSm5PR01yU2sxNFNUaEtlVzVYWW04MlIyNDJSblZWWms0MlpXZHVSbWREV1RaRmEzTXpTbWROVlZVOVpYbEtSbUpYUm5CaVEwazJTVzVTYkdKWVFuVmFWMDVzWXpKR2VXRlhPVUZhTWpGb1lWZDNkVmt5T1hSSmFYZHBWVWhLZGxwSVZtcGtTRTFwVDJ4ME4wbHNVbXhpYlVaMVpFVnNhMGxxYjJsTlJFRjNUVVJCZDAxRVFYUk5SRUYzVFVNd2QwMUVRWGRNVkVGM1RVUkJkRTFFUVhkTlJFRjNUVVJCZDAxRVFYZEphWGRwVWxjeGFHRlhkMmxQYlRVeFlrZDNjMGxzUW5OWlZ6UnBUMjV6YVZWSGVHaGlhMnhyU1dwdmVrNTVkMmxWUjNob1ltczFhR0pYVldsUGFVcERZako0YTBsR1NteGpSemw1WkVoTloxUXlOSFJWU0Vwc1lsZHNlbHBUUWxkaFYxWXpXbGhKWjFVd1VreEphWGRwVTFoT1RtUlhlREJoVmxKc1ltMUdkV1JEU1RaYWJVWnpZekpWYzBscmJIcFdXRTVzWTJ0S2FHTXlWbXRVUjJ4cVdsYzFlbHBUU1RaYWJVWnpZekpWYzBsc1ZucGFXRXA2U1dwdmQweERTa3BqTUVZeFpFZG9kbU5yU21oak1sWnJWRWRzYWxwWE5YcGFVMGsyV20xR2MyTXlWWE5KYTBZeFpFZG9kbU51VFdsUGFrRnpTV3RXZFdSSFZubGpTRXB3WXpKV1IxcFhSakJrV0Vwc1kzbEpObUp1Vm5OaVNEQnpTV3hTYkdKdFJuVmtSbEkxWTBkVmFVOXFRWE5KYkZwc1kyNU9jR0l5TkdsUGFVbDRUVk0wZUV4cVJYZEphWGRwVWxob2QyRllTalZXUjJ4MFdsWk9NRmxYTVhkSmFuQjFaRmQ0YzB4RFNsVmFWelZvWW01U1ZHUkhSakJrV0UxcFQyMDFNV0pIZDNOSmJFNHhXVzVPYW1OdGJIZGtSMngyWW1zMWFHSlhWV2xQYlRVeFlrZDNjMGxyYkhwVlIxWjVZMGRXTUdSWFJuTlVSMnhxV2xjMWVscFRTVFphYlVaell6SldPVmhUZDJsVVIyeHFXbGMxZWxwV1FteGpiV3gyV2tOSk5rbHFTWGROYWxsMFRWUkJkRTFVUmxWTlJGazJUbFJGTms1RVozVk9la0UwVFdwcmQwMVdiMmxNUTBwS1l6QldWRlpZVG14amFVazJaRWhLTVZwVGQybFRXRTVSV2xoS2QxcFlVakZaVjNoTllWZE9iR0p1VG14SmFuQnRXVmQ0ZWxwWU1EMD0KCkRhdGUgYW5kIFRpbWU6IDExLTEwLTIwMjUgMDQ6MTk6MjAKRXhwaXJhdGlvbiBEYXRlOiAxMS8xMC8yMDI2IDAzOjUxOjQ4CkxpY2Vuc2UgU3RhdHVzOiBTdWNjZXNzCkxpY2Vuc2UgUmV0dXJuIFN0YXR1czogTGljZW5zZWQKTGljZW5zZSBWYWxpZGF0aW9uIE1lc3NhZ2U6IAoNCg==</rd:Data>
+          <rd:FileType>txt</rd:FileType>
+          <rd:FileName>logs_11102025_041920</rd:FileName>
+        </rd:EmbeddedData>
+      </ConnectionProperties>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="CattleDataSet">
+      <Query>
+        <DataSourceName>CattleDataSource</DataSourceName>
+        <CommandText>/* Local Query */</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Caravan">
+          <DataField>Caravan</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Name">
+          <DataField>Name</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Weight">
+          <DataField>Weight</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Origin">
+          <DataField>Origin</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Age">
+          <DataField>Age</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Gender">
+          <DataField>Gender</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="GDM">
+          <DataField>GDM</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="Weight_double">
+          <Value>=CDbl(First(Fields!Weight.Value,"CattleDataSet"))</Value>
+        </Field>
+        <Field Name="Age_double">
+          <Value>=CDbl(First(Fields!Age.Value,"CattleDataSet"))</Value>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportParameters>
+    <ReportParameter Name="EstablishmentName">
+      <DataType>String</DataType>
+      <Prompt>Nombre del Establecimiento</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="ReportDate">
+      <DataType>String</DataType>
+      <Prompt>Fecha del Reporte</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="Renspa">
+      <DataType>String</DataType>
+      <Prompt>RENSPA</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="Province">
+      <DataType>String</DataType>
+      <Prompt>Provincia</Prompt>
+    </ReportParameter>
+  </ReportParameters>
+</Report>
