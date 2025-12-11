@@ -222,7 +222,7 @@ public class CattleController : ControllerBase
 
     [HttpPost("upload-image")]
     public async Task<IActionResult> UploadImage(
-        [FromForm] Guid cattleGlobalId, 
+        [FromForm] int cattleId, 
         [FromForm] string imageType, 
         IFormFile file)
     {
@@ -234,7 +234,7 @@ public class CattleController : ControllerBase
         var userId = User.GetId();
         var cattle = await _context.Cattle
             .Include(c => c.Establishment)
-            .FirstOrDefaultAsync(c => c.GlobalId == cattleGlobalId && c.Establishment!.UserId == userId);
+            .FirstOrDefaultAsync(c => c.Id == cattleId && c.Establishment!.UserId == userId);
 
         if (cattle == null)
         {
