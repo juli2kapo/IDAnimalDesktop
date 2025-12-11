@@ -13,11 +13,13 @@ public class AuthService : IAuthService
 {
     private readonly AppDbContext _context;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(AppDbContext context, IConfiguration configuration)
+    public AuthService(AppDbContext context, IConfiguration configuration, ILogger<AuthService> logger )
     {
         _context = context;
         _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task<LoginResponse?> LoginAsync(LoginRequest request)
@@ -25,6 +27,10 @@ public class AuthService : IAuthService
         var user = await _context.Users
             .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
 
+        if (user != null) 
+        {
+            _logger.LogInformation("✅ LOGIN SUCCESS: User {Email} has ID {Id}", user.Email, user.Id);
+        }
         if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
         {
             return null;

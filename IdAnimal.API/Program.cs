@@ -7,7 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using Dotmim.Sync;
 using Dotmim.Sync.Web.Server;
 using Dotmim.Sync.PostgreSql;
-
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
@@ -45,6 +45,13 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 var syncSetup = new SyncSetup(
     "Establishments", 
@@ -106,7 +113,7 @@ app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseSession();
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
