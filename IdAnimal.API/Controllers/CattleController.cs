@@ -52,6 +52,7 @@ public class CattleController : ControllerBase
         var cattleDtos = cattleEntities.Select(c => new CattleDto
         {
             Id = c.Id,
+            GlobalId = c.GlobalId,
             Caravan = c.Caravan,
             Name = c.Name,
             Weight = c.Weight,
@@ -63,6 +64,8 @@ public class CattleController : ControllerBase
             EstablishmentName = c.Establishment?.Name ?? "Sin Nombre",
             ImageCount = c.Images.Count,
             VideoCount = c.Videos.Count,
+            MainImageUrl = c.Images.Select(i => i.Path).FirstOrDefault() 
+                       ?? c.FullImages.Select(i => i.Path).FirstOrDefault()
             CustomData = c.CustomDataValues
                 .Where(cdv => cdv.CustomDataColumn != null)
                 .ToDictionary(
@@ -96,6 +99,7 @@ public class CattleController : ControllerBase
         var dto = new CattleDetailDto
         {
             Id = cattle.Id,
+            GlobalId = cattle.GlobalId,
             Caravan = cattle.Caravan,
             Name = cattle.Name,
             Weight = cattle.Weight,
@@ -222,7 +226,7 @@ public class CattleController : ControllerBase
 
     [HttpPost("upload-image")]
     public async Task<IActionResult> UploadImage(
-        [FromForm] int cattleId, 
+        [FromForm] Guid cattleGlobalId,
         [FromForm] string imageType, 
         IFormFile file)
     {
@@ -234,7 +238,7 @@ public class CattleController : ControllerBase
         var userId = User.GetId();
         var cattle = await _context.Cattle
             .Include(c => c.Establishment)
-            .FirstOrDefaultAsync(c => c.Id == cattleId && c.Establishment!.UserId == userId);
+            .FirstOrDefaultAsync(c => c.GlobalId == cattleGlobalId && c.Establishment!.UserId == userId);
 
         if (cattle == null)
         {
@@ -317,7 +321,7 @@ public class CattleController : ControllerBase
         {
             return BadRequest(new { error = "Both descriptor lists must be provided and non-empty." });
         }
-
+        return Ok(new { good_matches = 0, matches = 0 });
         // try
         // {
         //     var result = _snoutService.Compare(request.Descriptors1, request.Descriptors2);

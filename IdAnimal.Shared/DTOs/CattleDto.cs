@@ -3,6 +3,7 @@ namespace IdAnimal.Shared.DTOs;
 public class CattleDto
 {
     public int Id { get; set; }
+    public Guid GlobalId { get; set; } = Guid.NewGuid();
     public string Caravan { get; set; } = string.Empty;
     public string? Name { get; set; }
     public decimal? Weight { get; set; }
@@ -14,5 +15,6 @@ public class CattleDto
     public string? EstablishmentName { get; set; }
     public int ImageCount { get; set; }
     public int VideoCount { get; set; }
+    public string? MainImageUrl { get; set; }
     public Dictionary<string, string>? CustomData { get; set; }
 }

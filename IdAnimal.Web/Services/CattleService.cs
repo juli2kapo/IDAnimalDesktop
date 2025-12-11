@@ -46,7 +46,7 @@ public class CattleService
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<bool> UploadImageAsync(int cattleId, IBrowserFile file, string imageType)
+    public async Task<bool> UploadImageAsync(Guid cattleId, IBrowserFile file, string imageType)
 {
     long maxFileSize = 1024 * 1024 * 5; // 5MB match your Razor const
 
@@ -55,7 +55,7 @@ public class CattleService
         using var content = new MultipartFormDataContent();
 
         // 1. Add form fields (Must match [FromForm] names in Controller)
-        content.Add(new StringContent(cattleId.ToString()), "cattleId");
+        content.Add(new StringContent(cattleId.ToString()), "cattleGlobalId");
         content.Add(new StringContent(imageType), "imageType");
 
         // 2. Add the file stream

@@ -130,7 +130,15 @@
                     </div>
                     <div class="cattle-card-body">
                         <div class="cattle-image">
-                            <i class="bi bi-image"></i>
+                            @if (!string.IsNullOrEmpty(cattle.MainImageUrl))
+                            {
+                                <img src="@cattle.MainImageUrl" alt="@cattle.Caravan" class="preview-img" />
+                            }
+                            else
+                            {
+                                <i class="bi bi-image"></i>
+                            }
+
                             @if (cattle.ImageCount > 0)
                             {
                                 <span class="image-badge">@cattle.ImageCount</span>
@@ -530,6 +538,32 @@
             grid-template-columns: repeat(1, 1fr);
         }
     }
+    .cattle-image {
+        background-color: var(--primary-bg);
+        border-radius: 6px;
+        height: 140px; /* Increased height for better visibility */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+        position: relative;
+        overflow: hidden; 
+    }
+
+    /* Add new class */
+    .preview-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Ensures image covers the box without distortion */
+        object-position: center;
+    }
+
+    /* Ensure the icon stays centered if showing placeholder */
+    .cattle-image i {
+        font-size: 32px;
+        color: var(--text-secondary);
+        z-index: 1;
+    }
 </style>
 
 @code {
@@ -776,6 +810,7 @@
         currentCattle = new CattleDto
         {
             Id = cattle.Id,
+            GlobalId = cattle.GlobalId,
             EstablishmentId = cattle.EstablishmentId,
             Age = cattle.Age,
             Caravan = cattle.Caravan,

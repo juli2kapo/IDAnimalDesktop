@@ -3,6 +3,7 @@ namespace IdAnimal.Shared.Models;
 public class Cattle
 {
     public int Id { get; set; }
+    public Guid GlobalId { get; set; } = Guid.NewGuid();
     public int UserId { get; set; }
     public string Caravan { get; set; } = string.Empty;
     public string? Name { get; set; }

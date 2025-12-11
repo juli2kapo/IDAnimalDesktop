@@ -5,6 +5,7 @@ namespace IdAnimal.Shared.DTOs;
 public class CattleDetailDto
 {
     public int Id { get; set; }
+    public Guid GlobalId { get; set; } = Guid.NewGuid();
     public string Caravan { get; set; } = string.Empty;
     public string? Name { get; set; }
     public decimal? Weight { get; set; }

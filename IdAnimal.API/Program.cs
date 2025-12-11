@@ -128,8 +128,8 @@ using (var scope = app.Services.CreateScope())
         else
         {
              logger.LogWarning($"⚠️ Database file NOT found at: {dbPath}. Creating it now...");
-             context.Database.Migrate(); 
         }
+        context.Database.Migrate(); 
 
         logger.LogInformation("🔄 Attempting to apply migrations...");
         
