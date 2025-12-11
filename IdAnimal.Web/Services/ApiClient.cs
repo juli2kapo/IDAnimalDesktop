@@ -41,6 +41,14 @@ public class ApiClient
         return await _httpClient.PostAsJsonAsync(endpoint, data);
     }
 
+    public async Task<HttpResponseMessage> PostContentAsync(string endpoint, HttpContent content)
+    {
+        await SetAuthHeaderAsync();
+        // We use PostAsync here directly so the 'content' can define its own 
+        // Content-Type (e.g., multipart/form-data)
+        return await _httpClient.PostAsync(endpoint, content);
+    }
+
     public async Task<HttpResponseMessage> PutAsync<T>(string endpoint, T data)
     {
         await SetAuthHeaderAsync();

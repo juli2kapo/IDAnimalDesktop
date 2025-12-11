@@ -4,6 +4,9 @@ using IdAnimal.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Dotmim.Sync;
+using Dotmim.Sync.Sqlite;
+using Dotmim.Sync.Web.Server;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +16,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddLogging();
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(
@@ -42,6 +47,23 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+
+var syncSetup = new SyncSetup(
+    "Establishments", 
+    "Cattle", 
+    "CattleImages",      // Syncs the metadata (paths/IDs), NOT the actual files
+    "CattleFullImages", 
+    "CattleVideos"
+);
+
+syncSetup.Filters.Add("Establishments", "UserId");
+syncSetup.Filters.Add("Cattle", "UserId");
+syncSetup.Filters.Add("CattleImages", "UserId");
+syncSetup.Filters.Add("CattleFullImages", "UserId");
+syncSetup.Filters.Add("CattleVideos", "UserId");
+
+builder.Services.AddSyncServer<SqliteSyncProvider>(connectionString, syncSetup);
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -72,17 +94,7 @@ app.Use(async (context, next) =>
 
     // 4. Log the Outgoing Response
     var statusCode = context.Response.StatusCode;
-
-    if (statusCode >= 400)
-    {
-        logger.LogWarning($"⬅️ Server Response: {statusCode} (Error/Bad Request) for {method} {path}");
-    }
-    else
-    {
-        logger.LogInformation($"⬅️ Server Response: {statusCode} (Success) for {method} {path}");
-    }
 });
-// --- 🔴 LOGGING MIDDLEWARE ENDS HERE ---
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

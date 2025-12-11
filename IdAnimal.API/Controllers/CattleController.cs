@@ -251,18 +251,18 @@ public class CattleController : ControllerBase
             await file.CopyToAsync(memoryStream);
             byte[] imageBytes = memoryStream.ToArray();
 
-            if (imageType.Equals("Snout", StringComparison.OrdinalIgnoreCase))
-            {
-                var analysisResult = _snoutService.Analyze(imageBytes);
+            // if (imageType.Equals("Snout", StringComparison.OrdinalIgnoreCase))
+            // {
+            //     var analysisResult = _snoutService.Analyze(imageBytes);
 
-                if (analysisResult == null)
-                {
-                    return BadRequest(new { message = "No snout detected in the uploaded image." });
-                }
+            //     if (analysisResult == null)
+            //     {
+            //         return BadRequest(new { message = "No snout detected in the uploaded image." });
+            //     }
 
-                descriptorsJson = analysisResult.DescriptorsJson;
-                keypointsJson = analysisResult.KeypointsJson;
-            }
+            //     descriptorsJson = analysisResult.DescriptorsJson;
+            //     keypointsJson = analysisResult.KeypointsJson;
+            // }
 
             var fileName = $"{cattle.Caravan}_{imageType}_{DateTime.UtcNow.Ticks}{Path.GetExtension(file.FileName)}";
             var folder = $"cattle/{cattle.Caravan}/{imageType.ToLower()}";
@@ -318,16 +318,16 @@ public class CattleController : ControllerBase
             return BadRequest(new { error = "Both descriptor lists must be provided and non-empty." });
         }
 
-        try
-        {
-            var result = _snoutService.Compare(request.Descriptors1, request.Descriptors2);
-            return Ok(new { good_matches = result.GoodMatchCount, matches = result.Matches });
-        }
-        catch (Exception ex)
-        {
-            // Logging would go here
-            return BadRequest(new { error = $"Comparison failed: {ex.Message}" });
-        }
+        // try
+        // {
+        //     var result = _snoutService.Compare(request.Descriptors1, request.Descriptors2);
+        //     return Ok(new { good_matches = result.GoodMatchCount, matches = result.Matches });
+        // }
+        // catch (Exception ex)
+        // {
+        //     // Logging would go here
+        //     return BadRequest(new { error = $"Comparison failed: {ex.Message}" });
+        // }
     }
 
     private async Task UpdateCustomDataAsync(int cattleId, int userId, Dictionary<string, string> customData)
