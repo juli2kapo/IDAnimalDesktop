@@ -65,7 +65,7 @@ public class CattleController : ControllerBase
             ImageCount = c.Images.Count,
             VideoCount = c.Videos.Count,
             MainImageUrl = c.Images.Select(i => i.Path).FirstOrDefault() 
-                       ?? c.FullImages.Select(i => i.Path).FirstOrDefault()
+                       ?? c.FullImages.Select(i => i.Path).FirstOrDefault(),
             CustomData = c.CustomDataValues
                 .Where(cdv => cdv.CustomDataColumn != null)
                 .ToDictionary(
