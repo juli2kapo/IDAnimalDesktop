@@ -51,6 +51,7 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICloudStorageService, CloudinaryService>();
+builder.Services.AddSingleton<ISnoutAnalysisService, SnoutAnalysisService>();
 
 var app = builder.Build();
 

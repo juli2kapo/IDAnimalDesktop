@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace IdAnimal.API.Controllers;
 
@@ -17,11 +18,16 @@ public class CattleController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly ICloudStorageService _cloudStorage;
+    private readonly ISnoutAnalysisService _snoutService;
 
-    public CattleController(AppDbContext context, ICloudStorageService cloudStorage)
+    public CattleController(
+        AppDbContext context, 
+        ICloudStorageService cloudStorage,
+        ISnoutAnalysisService snoutService)
     {
         _context = context;
         _cloudStorage = cloudStorage;
+        _snoutService = snoutService;
     }
 
     [HttpGet]
@@ -33,7 +39,7 @@ public class CattleController : ControllerBase
             .Include(c => c.Images)
             .Include(c => c.Videos)
             .Include(c => c.CustomDataValues)
-            .ThenInclude(cdv => cdv.CustomDataColumn) // Ensure this is included
+            .ThenInclude(cdv => cdv.CustomDataColumn)
             .Where(c => c.Establishment!.UserId == userId);
 
         if (establishmentId.HasValue)
@@ -41,10 +47,8 @@ public class CattleController : ControllerBase
             query = query.Where(c => c.EstablishmentId == establishmentId.Value);
         }
 
-        // 1. Execute Query and bring entities to memory
         var cattleEntities = await query.ToListAsync();
 
-        // 2. Map to DTO in memory (Client-side evaluation)
         var cattleDtos = cattleEntities.Select(c => new CattleDto
         {
             Id = c.Id,
@@ -59,9 +63,8 @@ public class CattleController : ControllerBase
             EstablishmentName = c.Establishment?.Name ?? "Sin Nombre",
             ImageCount = c.Images.Count,
             VideoCount = c.Videos.Count,
-            // Now ToDictionary works because we are in memory
             CustomData = c.CustomDataValues
-                .Where(cdv => cdv.CustomDataColumn != null) // Safety check
+                .Where(cdv => cdv.CustomDataColumn != null)
                 .ToDictionary(
                     cdv => cdv.CustomDataColumn!.ColumnName,
                     cdv => cdv.Value
@@ -156,7 +159,6 @@ public class CattleController : ControllerBase
         _context.Cattle.Add(cattle);
         await _context.SaveChangesAsync();
 
-        // Add custom data if provided
         if (dto.CustomData != null && dto.CustomData.Any())
         {
             await UpdateCustomDataAsync(cattle.Id, userId, dto.CustomData);
@@ -171,7 +173,7 @@ public class CattleController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] CattleDto dto)
     {
-        var userId = User.GetId();;
+        var userId = User.GetId();
         var cattle = await _context.Cattle
             .Include(c => c.Establishment)
             .FirstOrDefaultAsync(c => c.Id == id && c.Establishment!.UserId == userId);
@@ -189,7 +191,6 @@ public class CattleController : ControllerBase
         cattle.Gender = dto.Gender;
         cattle.GDM = dto.GDM;
 
-        // Update custom data if provided
         if (dto.CustomData != null)
         {
             await UpdateCustomDataAsync(cattle.Id, userId, dto.CustomData);
@@ -220,12 +221,20 @@ public class CattleController : ControllerBase
     }
 
     [HttpPost("upload-image")]
-    public async Task<IActionResult> UploadImage([FromBody] UploadImageRequest request)
+    public async Task<IActionResult> UploadImage(
+        [FromForm] Guid cattleGlobalId, 
+        [FromForm] string imageType, 
+        IFormFile file)
     {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new { message = "No file uploaded." });
+        }
+
         var userId = User.GetId();
         var cattle = await _context.Cattle
             .Include(c => c.Establishment)
-            .FirstOrDefaultAsync(c => c.Id == request.CattleId && c.Establishment!.UserId == userId);
+            .FirstOrDefaultAsync(c => c.GlobalId == cattleGlobalId && c.Establishment!.UserId == userId);
 
         if (cattle == null)
         {
@@ -234,19 +243,41 @@ public class CattleController : ControllerBase
 
         try
         {
-            var fileName = $"{cattle.Caravan}_{request.ImageType}_{DateTime.UtcNow.Ticks}";
-            var folder = $"cattle/{cattle.Caravan}/{request.ImageType.ToLower()}";
-            var imageUrl = await _cloudStorage.UploadImageAsync(request.ImageBase64, folder, fileName);
+            string? descriptorsJson = null;
+            string? keypointsJson = null;
+            
+            // 2. Read file stream into byte array
+            using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+            byte[] imageBytes = memoryStream.ToArray();
 
-            if (request.ImageType.Equals("Snout", StringComparison.OrdinalIgnoreCase))
+            if (imageType.Equals("Snout", StringComparison.OrdinalIgnoreCase))
+            {
+                var analysisResult = _snoutService.Analyze(imageBytes);
+
+                if (analysisResult == null)
+                {
+                    return BadRequest(new { message = "No snout detected in the uploaded image." });
+                }
+
+                descriptorsJson = analysisResult.DescriptorsJson;
+                keypointsJson = analysisResult.KeypointsJson;
+            }
+
+            var fileName = $"{cattle.Caravan}_{imageType}_{DateTime.UtcNow.Ticks}{Path.GetExtension(file.FileName)}";
+            var folder = $"cattle/{cattle.Caravan}/{imageType.ToLower()}";
+            
+            var imageUrl = await _cloudStorage.UploadImageAsync(Convert.ToBase64String(imageBytes), folder, fileName);
+
+            if (imageType.Equals("Snout", StringComparison.OrdinalIgnoreCase))
             {
                 var image = new CattleImage
                 {
                     Path = imageUrl,
                     AddedDate = DateTime.UtcNow,
                     CattleId = cattle.Id,
-                    Descriptors = request.Descriptors,
-                    Keypoints = request.Keypoints
+                    Descriptors = descriptorsJson,
+                    Keypoints = keypointsJson
                 };
                 _context.CattleImages.Add(image);
             }
@@ -263,11 +294,39 @@ public class CattleController : ControllerBase
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { imageUrl });
+            var response = new 
+            { 
+                imageUrl = imageUrl,
+                descriptors = descriptorsJson != null ? JsonSerializer.Deserialize<object>(descriptorsJson) : new List<object>(),
+                keypoints = keypointsJson != null ? JsonSerializer.Deserialize<object>(keypointsJson) : new List<object>()
+            };
+
+            return Ok(response);
         }
         catch (Exception ex)
         {
             return BadRequest(new { message = $"Upload failed: {ex.Message}" });
+        }
+    }
+
+    [HttpPost("compare")]
+    public IActionResult CompareDescriptors([FromBody] CompareDescriptorsDto request)
+    {
+        if (request.Descriptors1 == null || request.Descriptors2 == null || 
+            request.Descriptors1.Count == 0 || request.Descriptors2.Count == 0)
+        {
+            return BadRequest(new { error = "Both descriptor lists must be provided and non-empty." });
+        }
+
+        try
+        {
+            var result = _snoutService.Compare(request.Descriptors1, request.Descriptors2);
+            return Ok(new { good_matches = result.GoodMatchCount, matches = result.Matches });
+        }
+        catch (Exception ex)
+        {
+            // Logging would go here
+            return BadRequest(new { error = $"Comparison failed: {ex.Message}" });
         }
     }
 
@@ -314,4 +373,10 @@ public class CattleController : ControllerBase
 
         await _context.SaveChangesAsync();
     }
+}
+
+public class CompareDescriptorsDto
+{
+    public List<List<float>> Descriptors1 { get; set; } = new();
+    public List<List<float>> Descriptors2 { get; set; } = new();
 }
