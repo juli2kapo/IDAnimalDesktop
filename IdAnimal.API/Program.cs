@@ -56,7 +56,7 @@ builder.Services.AddSession(options =>
 var syncSetup = new SyncSetup(
     "Establishments", 
     "Cattle", 
-    "CattleImages",      // Syncs the metadata (paths/IDs), NOT the actual files
+    "CattleImages",
     "CattleFullImages", 
     "CattleVideos"
 );

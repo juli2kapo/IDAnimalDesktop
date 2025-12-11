@@ -52,6 +52,7 @@ public class CattleController : ControllerBase
         var cattleDtos = cattleEntities.Select(c => new CattleDto
         {
             Id = c.Id,
+            UserId = userId,
             GlobalId = c.GlobalId,
             Caravan = c.Caravan,
             Name = c.Name,
@@ -151,6 +152,7 @@ public class CattleController : ControllerBase
         var cattle = new Cattle
         {
             Caravan = dto.Caravan,
+            UserId = userId,
             Name = dto.Name,
             Weight = dto.Weight,
             Origin = dto.Origin,
@@ -281,7 +283,8 @@ public class CattleController : ControllerBase
                     AddedDate = DateTime.UtcNow,
                     CattleId = cattle.Id,
                     Descriptors = descriptorsJson,
-                    Keypoints = keypointsJson
+                    Keypoints = keypointsJson,
+                    UserId = userId
                 };
                 _context.CattleImages.Add(image);
             }
@@ -290,6 +293,7 @@ public class CattleController : ControllerBase
                 var fullImage = new CattleFullImage
                 {
                     Path = imageUrl,
+                    UserId = userId,
                     AddedDate = DateTime.UtcNow,
                     CattleId = cattle.Id
                 };
