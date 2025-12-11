@@ -52,7 +52,6 @@ public class CattleController : ControllerBase
         var cattleDtos = cattleEntities.Select(c => new CattleDto
         {
             Id = c.Id,
-            UserId = userId,
             GlobalId = c.GlobalId,
             Caravan = c.Caravan,
             Name = c.Name,
