@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Dotmim.Sync;
-using Dotmim.Sync.Sqlite;
 using Dotmim.Sync.Web.Server;
+using Dotmim.Sync.PostgreSql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,9 +20,7 @@ builder.Services.AddLogging();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    ));
+    options.UseNpgsql(connectionString));
 
 // JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured");
@@ -62,7 +60,7 @@ syncSetup.Filters.Add("CattleImages", "UserId");
 syncSetup.Filters.Add("CattleFullImages", "UserId");
 syncSetup.Filters.Add("CattleVideos", "UserId");
 
-builder.Services.AddSyncServer<SqliteSyncProvider>(connectionString, syncSetup);
+builder.Services.AddSyncServer<NpgsqlSyncProvider>(connectionString, syncSetup);
 
 builder.Services.AddCors(options =>
 {
@@ -119,26 +117,17 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        var dbPath = Path.Combine(AppContext.BaseDirectory, "IdAnimal.db");
-        
-        if (File.Exists(dbPath))
-        {
-             logger.LogInformation($"✅ Database file found at: {dbPath}");
-        }
-        else
-        {
-             logger.LogWarning($"⚠️ Database file NOT found at: {dbPath}. Creating it now...");
-        }
+        logger.LogInformation("🔄 Checking database connection and applying migrations...");
+
+        // This command creates the PostgreSQL database if it doesn't exist 
+        // AND applies all pending migrations.
         context.Database.Migrate(); 
 
-        logger.LogInformation("🔄 Attempting to apply migrations...");
-        
-        
         logger.LogInformation("✅ Database migration applied successfully.");
     }
     catch (Exception ex)
     {
-        logger.LogCritical(ex, "❌ FATAL ERROR: Could not create or migrate the database.");
+        logger.LogCritical(ex, "❌ FATAL ERROR: Could not connect to or migrate the PostgreSQL database. Ensure the service is running and credentials are correct.");
     }
 }
 
