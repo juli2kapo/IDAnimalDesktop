@@ -12,13 +12,39 @@
     <link rel="stylesheet" href="@Assets["IdAnimal.Web.styles.css"]" />
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <HeadOutlet @rendermode="InteractiveServer" />
+    <HeadOutlet @rendermode="@ModoRender" />
 </head>
 
 <body>
-    <Routes @rendermode="InteractiveServer" />
-    <script src="_framework/blazor.web.js"></script>
+    <Routes @rendermode="@ModoRender" />
+    @if (ModoRender is not null)
+    {
+        <script src="_framework/blazor.web.js"></script>
+    }
     <script src="js/site.js"></script>
 </body>
 
 </html>
+
+@code {
+    [CascadingParameter] private HttpContext? HttpContext { get; set; }
+
+    /// <summary>
+    /// La ficha pública (/a/{id}) se sirve con render estático; el resto de la app,
+    /// interactiva.
+    ///
+    /// Con InteractiveServer el componente corre DOS veces: el prerender del
+    /// servidor y otra vez al conectar el circuito. En esa segunda pasada isLoading
+    /// volvía a true y la ficha ya dibujada se reemplazaba por el spinner unos
+    /// milisegundos — el destello que se veía al cargar. La ficha es de sólo
+    /// lectura (pide los datos y los muestra, sin botones ni eventos), así que no
+    /// gana nada con ser interactiva.
+    ///
+    /// Sin modo interactivo tampoco hace falta cargar blazor.web.js, que además
+    /// evita abrir un websocket por cada visita al QR.
+    /// </summary>
+    private IComponentRenderMode? ModoRender =>
+        HttpContext?.Request.Path.StartsWithSegments("/a") == true
+            ? null
+            : RenderMode.InteractiveServer;
+}

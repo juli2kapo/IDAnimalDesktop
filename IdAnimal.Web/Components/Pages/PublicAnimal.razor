@@ -3,6 +3,17 @@
 @using IdAnimal.Web.Services
 @inject PublicAnimalService PublicAnimals
 
+@* Render estático a propósito, sin InteractiveServer.
+
+   La ficha es de sólo lectura: pide los datos una vez y los muestra, no tiene
+   botones ni eventos. Con el modo interactivo que hereda de App.razor, el
+   componente se ejecutaba DOS veces (prerender en el servidor y otra vez al
+   conectar el circuito): en la segunda, isLoading volvía a true y la ficha ya
+   dibujada se reemplazaba por el spinner unos milisegundos. Ese era el destello.
+
+   Medido contra producción: ficha a los 756ms, spinner a los 2642ms, ficha de
+   nuevo a los 2651ms. Con render estático se dibuja una sola vez y no vuelve. *@
+
 <PageTitle>@(animal?.Name ?? animal?.Caravan ?? "Animal") — IdAnimal</PageTitle>
 
 <div class="pub-wrap">
