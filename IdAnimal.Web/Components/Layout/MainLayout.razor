@@ -5,12 +5,18 @@
 @inject NavigationManager NavManager
 
 <div class="page">
+    @* Sin <Authorizing>, AuthorizeView cae al texto por defecto de Blazor
+       ("Authorizing...") mientras resuelve la sesión. Esa espera dura lo que tarda
+       AuthStateProvider en leer el JWT de ProtectedLocalStorage, que recién existe
+       con el circuito interactivo conectado: se veía como un parpadeo al cargar
+       cualquier página. Vacío = no mostrar nada hasta saber si hay sesión. *@
     <AuthorizeView>
         <Authorized>
             <div class="sidebar">
                 <NavMenu />
             </div>
         </Authorized>
+        <Authorizing><text></text></Authorizing>
     </AuthorizeView>
 
     <main>
@@ -32,6 +38,7 @@
                 <NotAuthorized>
                     <a href="login" class="btn btn-primary btn-sm">Iniciar Sesión</a>
                 </NotAuthorized>
+                <Authorizing><text></text></Authorizing>
             </AuthorizeView>
         </div>
 
