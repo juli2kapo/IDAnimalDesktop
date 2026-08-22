@@ -2,24 +2,34 @@
 <CascadingAuthenticationState>
 <Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
-        @* ✅ CHANGE: Use AuthorizeRouteView instead of RouteView *@
-        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
-            <NotAuthorized>
-                @* This shows if a user tries to access a protected page while logged out *@
-                <div class="alert alert-warning m-4">
-                    <h3>Acceso Denegado</h3>
-                    <p>Debes iniciar sesión para ver esta página.</p>
-                    <a href="login" class="btn btn-primary">Ir al Login</a>
-                </div>
-            </NotAuthorized>
-            @* Sin contenido a propósito: por defecto Blazor muestra "Authorizing..."
-               mientras resuelve la sesión, y esa espera se nota porque AuthStateProvider
-               lee el JWT de ProtectedLocalStorage, que recién existe cuando se conecta el
-               circuito interactivo. En la ficha pública (/a/{id}), que no pide login, se
-               veía como un parpadeo. Va un <text></text> vacío y no sólo un comentario:
-               un fragmento con sólo comentarios compila a null y Blazor vuelve al default. *@
-            <Authorizing><text></text></Authorizing>
-        </AuthorizeRouteView>
+        @if (EsRutaPublica(routeData))
+        {
+            @* La ficha pública (/a/{id}) no pasa por autorización.
+               AuthorizeRouteView monta su DefaultLayout (MainLayout) mientras
+               resuelve la sesión y recién después aplica el @layout de la página:
+               eso hacía que se viera un destello del panel (la barra verde
+               superior) antes de la ficha. Con RouteView no hay espera ni
+               layout intermedio. *@
+            <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.EmptyLayout)" />
+        }
+        else
+        {
+            <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+                <NotAuthorized>
+                    @* This shows if a user tries to access a protected page while logged out *@
+                    <div class="alert alert-warning m-4">
+                        <h3>Acceso Denegado</h3>
+                        <p>Debes iniciar sesión para ver esta página.</p>
+                        <a href="login" class="btn btn-primary">Ir al Login</a>
+                    </div>
+                </NotAuthorized>
+                @* Vacío a propósito: si no, Blazor muestra su "Authorizing..." por
+                   defecto mientras lee el JWT de ProtectedLocalStorage. Va un
+                   <text></text> y no sólo un comentario porque un fragmento con
+                   únicamente comentarios compila a null y vuelve al default. *@
+                <Authorizing><text></text></Authorizing>
+            </AuthorizeRouteView>
+        }
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
     <NotFound>
@@ -33,3 +43,17 @@
     </NotFound>
 </Router>
 </CascadingAuthenticationState>
+
+@code {
+    /// <summary>
+    /// Páginas que se sirven sin autorización. Se comparan por tipo y no por URL
+    /// para que no se desincronice si cambia la ruta de la página.
+    /// </summary>
+    private static readonly HashSet<Type> RutasPublicas = new()
+    {
+        typeof(Pages.PublicAnimal),
+    };
+
+    private static bool EsRutaPublica(RouteData routeData)
+        => RutasPublicas.Contains(routeData.PageType);
+}
