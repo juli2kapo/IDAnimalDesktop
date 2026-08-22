@@ -132,7 +132,7 @@
                         <div class="cattle-image">
                             @if (!string.IsNullOrEmpty(cattle.MainImageUrl))
                             {
-                                <img src="@cattle.MainImageUrl" alt="@cattle.Caravan" class="preview-img" />
+                                <img src="@ApiUrl.Resolve(cattle.MainImageUrl)" alt="@cattle.Caravan" class="preview-img" />
                             }
                             else
                             {
@@ -233,8 +233,8 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Peso (kg)</label>
-                                <InputNumber class="form-control" @bind-Value="currentCattle.Weight" onkeydown="preventNonNumeric(event)" />
-                                
+                                <InputNumber class="form-control" step="0.01" lang="en" @bind-Value="currentCattle.Weight" />
+
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Origen</label>
@@ -252,15 +252,68 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">GDM</label>
-                                <InputNumber class="form-control" @bind-Value="currentCattle.GDM" onkeydown="preventNonNumeric(event)" />
+                                <InputNumber class="form-control" step="0.01" lang="en" @bind-Value="currentCattle.GDM" />
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Edad</label>
-                                <InputNumber class="form-control" @bind-Value="currentCattle.Age" onkeydown="preventNonNumeric(event)" />
+                                <InputNumber class="form-control" step="1" lang="en" @bind-Value="currentCattle.Age" />
                             </div>
                             <div class="col-md-6 mb-3">
+                                <label class="form-label">Nacimiento</label>
+                                <InputDate class="form-control" @bind-Value="currentCattle.BirthDate" />
+                            </div>
+                        </div>
+
+                        <hr class="form-divider" />
+                        <h6 class="form-section-title">Historia sanitaria</h6>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <InputTextArea class="form-control" rows="4"
+                                               placeholder="Ej: EST. LIBRE DE BRUCELOSIS, fechas de vacunación, antecedentes..."
+                                               @bind-Value="currentCattle.SanitaryHistory" />
+                            </div>
+                        </div>
+
+                        <h6 class="form-section-title">Alimentación y peso (%)</h6>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Campo</label>
+                                <InputNumber class="form-control" min="0" max="100" step="1" lang="en"
+                                             @bind-Value="currentCattle.FeedPasturePct" />
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Feedlot</label>
+                                <InputNumber class="form-control" min="0" max="100" step="1" lang="en"
+                                             @bind-Value="currentCattle.FeedFeedlotPct" />
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Orgánica</label>
+                                <InputNumber class="form-control" min="0" max="100" step="1" lang="en"
+                                             @bind-Value="currentCattle.FeedOrganicPct" />
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Peso (progreso)</label>
+                                <InputNumber class="form-control" min="0" max="100" step="1" lang="en"
+                                             @bind-Value="currentCattle.WeightProgressPct" />
+                            </div>
+                        </div>
+
+                        <h6 class="form-section-title">Certificaciones</h6>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <div class="cert-checkboxes">
+                                    @foreach (var cert in CertCatalog.All)
+                                    {
+                                        <label class="cert-checkbox">
+                                            <input type="checkbox"
+                                                   checked="@HasCert(cert.Key)"
+                                                   @onchange="e => ToggleCert(cert.Key, (bool)e.Value!)" />
+                                            <span class="cert-checkbox-label">@cert.Label</span>
+                                        </label>
+                                    }
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -564,6 +617,51 @@
         color: var(--text-secondary);
         z-index: 1;
     }
+
+    /* Secciones del formulario extendido */
+    .form-divider {
+        border: 0;
+        border-top: 1.5px dashed var(--border-color);
+        margin: 18px 0 16px;
+    }
+
+    .form-section-title {
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+    }
+
+    .cert-checkboxes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+    }
+
+    .cert-checkbox {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        background: var(--card-bg);
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+    .cert-checkbox:has(input:checked) {
+        border-color: var(--primary-green);
+        background: var(--green-light);
+    }
+
+    .cert-checkbox-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
 </style>
 
 @code {
@@ -597,6 +695,13 @@
         errorMessage = null;
         Console.WriteLine($"[Cattle] Error message cleared. New value: {(errorMessage == null ? "null" : errorMessage)}");
         StateHasChanged();
+    }
+
+    private bool HasCert(string key) => CertCatalog.Contains(currentCattle.Certifications, key);
+
+    private void ToggleCert(string key, bool include)
+    {
+        currentCattle.Certifications = CertCatalog.Toggle(currentCattle.Certifications, key, include);
     }
 
     protected override async Task OnInitializedAsync()

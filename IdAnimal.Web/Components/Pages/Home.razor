@@ -4,65 +4,75 @@
 <PageTitle>IdAnimal - Sistema de Gestión de Ganado</PageTitle>
 
 <div class="landing-page">
-@*     <div class="hero-section">
+    <div class="hero-section">
         <div class="hero-content">
+            <span class="hero-eyebrow">Gestión Ganadera</span>
             <h1>IdAnimal</h1>
-            <p class="tagline">Sistema Integral de Gestión de Ganado</p>
+            <p class="tagline">Identificación biométrica y trazabilidad del rodeo</p>
             <p class="description">
-                Gestiona tus establecimientos, registra tu ganado, y mantén control total
-                de tu producción con identificación biométrica por morro.
+                Gestioná establecimientos, registrá tu ganado y mantené el control
+                total de la producción. Identificación por morro, pesaje y reportes
+                listos para imprimir.
             </p>
+            <div class="cta-buttons">
+                <a href="/cattle" class="btn btn-light-on-green">Ver Ganado</a>
+                <a href="/establishments" class="btn btn-ghost-on-green">Establecimientos</a>
+            </div>
         </div>
         <div class="hero-image">
-            <i class="bi bi-clipboard-data" style="font-size: 200px; color: white;"></i>
+            <div class="hero-badge">
+                <i class="bi bi-clipboard-data"></i>
+                <span class="hero-badge-label">CAMPO</span>
+            </div>
         </div>
-    </div> *@
+    </div>
 
     <div class="features-section">
-        <h2>Características Principales</h2>
-        <div class="row">
+        <div class="features-header">
+            <span class="section-eyebrow">Plataforma</span>
+            <h2>Características Principales</h2>
+        </div>
+        <div class="row g-4">
             <div class="col-md-4">
                 <div class="feature-card">
                     <i class="bi bi-building feature-icon"></i>
                     <h3>Establecimientos</h3>
-                    <p>Gestiona múltiples establecimientos con información detallada y estadísticas.</p>
+                    <p>Gestioná múltiples campos con información detallada y estadísticas en tiempo real.</p>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="feature-card">
                     <i class="bi bi-list-ul feature-icon"></i>
                     <h3>Registro de Ganado</h3>
-                    <p>Control completo de tu ganado: caravana, peso, origen, género, GDM y datos personalizados.</p>
+                    <p>Caravana, peso, origen, género, GDM y datos personalizados — todo en un solo lugar.</p>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="feature-card">
                     <i class="bi bi-camera feature-icon"></i>
                     <h3>Identificación Biométrica</h3>
-                    <p>Identifica ganado por fotografía del morro con tecnología de reconocimiento avanzada.</p>
+                    <p>Identificá ganado por fotografía del morro con tecnología de reconocimiento avanzada.</p>
                 </div>
             </div>
-        </div>
-        <div class="row mt-4">
             <div class="col-md-4">
                 <div class="feature-card">
                     <i class="bi bi-cloud-upload feature-icon"></i>
                     <h3>Almacenamiento en la Nube</h3>
-                    <p>Imágenes y videos almacenados de forma segura en la nube.</p>
+                    <p>Imágenes y videos guardados de forma segura, accesibles desde cualquier dispositivo.</p>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="feature-card">
                     <i class="bi bi-file-earmark-spreadsheet feature-icon"></i>
                     <h3>Importación Excel/CSV</h3>
-                    <p>Importa datos desde archivos Excel o CSV para carga masiva.</p>
+                    <p>Cargá datos masivos desde planillas de cálculo en pocos clics.</p>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="feature-card">
                     <i class="bi bi-file-pdf feature-icon"></i>
                     <h3>Reportes PDF</h3>
-                    <p>Genera reportes profesionales en PDF para presentar a clientes.</p>
+                    <p>Generá reportes profesionales para presentar a clientes o autoridades.</p>
                 </div>
             </div>
         </div>
@@ -74,91 +84,267 @@
         min-height: 100vh;
     }
 
+    /* Hero — verde campo, igual sentimiento que el card "Nueva sesión" del teléfono */
     .hero-section {
+        position: relative;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 80px 60px;
-        background: linear-gradient(135deg, var(--primary-orange) 0%, var(--accent-orange) 100%);
+        padding: 70px 60px;
+        background: linear-gradient(135deg, var(--primary-green) 0%, var(--green-dark) 100%);
         color: white;
         gap: 40px;
+        overflow: hidden;
+        border-bottom: 4px solid var(--green-dark);
+    }
+
+    .hero-section::before {
+        content: "";
+        position: absolute;
+        top: -120px;
+        right: -120px;
+        width: 360px;
+        height: 360px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.06);
+        pointer-events: none;
+    }
+
+    .hero-section::after {
+        content: "";
+        position: absolute;
+        bottom: -200px;
+        left: -120px;
+        width: 420px;
+        height: 420px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.04);
+        pointer-events: none;
     }
 
     .hero-content {
         flex: 1;
-        max-width: 600px;
+        max-width: 620px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero-eyebrow {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.18);
+        color: white;
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 18px;
     }
 
     .hero-content h1 {
-        font-size: 4rem;
-        font-weight: bold;
-        margin-bottom: 20px;
+        font-size: 4.2rem;
+        font-weight: 900;
+        margin-bottom: 16px;
+        color: white;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        line-height: 1;
     }
 
     .tagline {
-        font-size: 1.5rem;
-        margin-bottom: 15px;
+        font-size: 1.4rem;
+        margin-bottom: 14px;
         opacity: 0.95;
+        font-weight: 600;
+        letter-spacing: 0.5px;
     }
 
     .description {
-        font-size: 1.1rem;
-        margin-bottom: 30px;
+        font-size: 1.05rem;
+        margin-bottom: 28px;
         opacity: 0.9;
         line-height: 1.6;
+        max-width: 540px;
+    }
+
+    .cta-buttons {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    .btn-light-on-green {
+        background: white !important;
+        color: var(--green-dark) !important;
+        border: 2px solid white !important;
+        font-weight: 800 !important;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 12px 24px;
+        border-radius: var(--border-radius-sm);
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .btn-light-on-green:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+        color: var(--green-dark) !important;
+        text-decoration: none;
+    }
+
+    .btn-ghost-on-green {
+        background: transparent !important;
+        color: white !important;
+        border: 2px solid rgba(255, 255, 255, 0.7) !important;
+        font-weight: 800 !important;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 12px 24px;
+        border-radius: var(--border-radius-sm);
+        transition: all 0.15s;
+    }
+
+    .btn-ghost-on-green:hover {
+        background: rgba(255, 255, 255, 0.15) !important;
+        border-color: white !important;
+        color: white !important;
+        text-decoration: none;
     }
 
     .hero-image {
         flex: 0 0 auto;
         text-align: center;
+        position: relative;
+        z-index: 1;
     }
 
-    .hero-image i {
-        color: white !important;
+    .hero-badge {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.10);
+        border: 3px solid rgba(255, 255, 255, 0.35);
+        backdrop-filter: blur(2px);
     }
 
+    .hero-badge i {
+        font-size: 76px;
+        color: white;
+        margin-bottom: 8px;
+    }
+
+    .hero-badge-label {
+        color: white;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+    }
+
+    /* Features */
     .features-section {
-        padding: 80px 60px;
+        padding: 70px 60px;
         background: var(--primary-bg);
+    }
+
+    .features-header {
+        text-align: center;
+        margin-bottom: 50px;
+    }
+
+    .section-eyebrow {
+        display: inline-block;
+        color: var(--primary-green);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        padding: 4px 14px;
+        border: 1.5px solid var(--primary-green);
+        border-radius: 20px;
+        background: var(--green-light);
     }
 
     .features-section h2 {
         text-align: center;
-        font-size: 2.5rem;
-        margin-bottom: 50px;
-        color: var(--accent-orange);
+        font-size: 2.2rem;
+        margin: 0;
+        color: var(--text-primary);
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
     }
 
     .feature-card {
         background: var(--card-bg);
-        padding: 30px;
-        border-radius: 12px;
+        padding: 32px 24px;
+        border-radius: var(--border-radius);
+        border: 1.5px solid var(--border-color);
         box-shadow: var(--shadow);
         text-align: center;
         height: 100%;
-        transition: transform 0.3s, box-shadow 0.3s;
+        transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
     }
 
     .feature-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary-green);
     }
 
     .feature-icon {
-        font-size: 48px;
-        color: var(--primary-orange);
-        margin-bottom: 20px;
+        font-size: 38px !important;
+        color: var(--primary-green) !important;
+        margin-bottom: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 78px;
+        height: 78px;
+        border-radius: 50%;
+        background: var(--green-light);
+        border: 2px solid var(--primary-green);
     }
 
     .feature-card h3 {
-        font-size: 1.3rem;
-        margin-bottom: 15px;
+        font-size: 1.1rem;
+        margin-bottom: 10px;
         color: var(--text-primary);
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
     }
 
     .feature-card p {
         color: var(--text-secondary);
-        line-height: 1.6;
+        line-height: 1.55;
+        font-size: 0.95rem;
+        margin: 0;
+    }
+
+    @@media (max-width: 992px) {
+        .hero-section {
+            padding: 50px 30px;
+        }
+
+        .hero-content h1 {
+            font-size: 3rem;
+        }
+
+        .hero-badge {
+            width: 160px;
+            height: 160px;
+        }
+
+        .hero-badge i {
+            font-size: 60px;
+        }
     }
 
     @@media (max-width: 768px) {
@@ -169,16 +355,24 @@
         }
 
         .hero-content h1 {
-            font-size: 2.5rem;
+            font-size: 2.4rem;
         }
 
         .hero-image {
             display: none;
         }
 
+        .cta-buttons {
+            flex-direction: column;
+            justify-content: center;
+        }
+
         .features-section {
             padding: 40px 20px;
         }
+
+        .features-section h2 {
+            font-size: 1.7rem;
+        }
     }
 </style>
-

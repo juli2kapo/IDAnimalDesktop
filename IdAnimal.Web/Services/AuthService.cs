@@ -13,7 +13,6 @@ public class AuthService
         _httpClient = httpClient;
         _configuration = configuration;
 
-        // var baseUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5001";
         var baseUrl = "https://api.idanimal.tech";
         _httpClient.BaseAddress = new Uri(baseUrl);
     }
@@ -22,14 +21,15 @@ public class AuthService
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync("/api/auth/login", request);
+            var response = await _httpClient.PostAsJsonAsync(
+                "/api/v1/auth/login", request, ApiJson.Options);
 
             if (!response.IsSuccessStatusCode)
             {
                 return null;
             }
 
-            return await response.Content.ReadFromJsonAsync<LoginResponse>();
+            return await response.Content.ReadFromJsonAsync<LoginResponse>(ApiJson.Options);
         }
         catch
         {
@@ -41,14 +41,15 @@ public class AuthService
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync("/api/auth/register", request);
+            var response = await _httpClient.PostAsJsonAsync(
+                "/api/v1/auth/register", request, ApiJson.Options);
 
             if (!response.IsSuccessStatusCode)
             {
                 return null;
             }
 
-            return await response.Content.ReadFromJsonAsync<LoginResponse>();
+            return await response.Content.ReadFromJsonAsync<LoginResponse>(ApiJson.Options);
         }
         catch
         {

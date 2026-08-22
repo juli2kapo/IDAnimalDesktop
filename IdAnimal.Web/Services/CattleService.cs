@@ -1,7 +1,7 @@
 using IdAnimal.Shared.DTOs;
-using Microsoft.AspNetCore.Components.Forms; 
-using System.Net.Http.Headers;               
-using System.Net.Http;                      
+using Microsoft.AspNetCore.Components.Forms;
+using System.Net.Http.Headers;
+using System.Net.Http;
 
 namespace IdAnimal.Web.Services;
 
@@ -17,72 +17,64 @@ public class CattleService
     public async Task<List<CattleDto>?> GetAllAsync(int? establishmentId = null)
     {
         var endpoint = establishmentId.HasValue
-            ? $"/api/cattle?establishmentId={establishmentId.Value}"
-            : "/api/cattle";
+            ? $"/api/v1/ganado?establishment_id={establishmentId.Value}"
+            : "/api/v1/ganado";
 
         return await _apiClient.GetAsync<List<CattleDto>>(endpoint);
     }
 
     public async Task<CattleDetailDto?> GetByIdAsync(int id)
     {
-        return await _apiClient.GetAsync<CattleDetailDto>($"/api/cattle/{id}");
+        return await _apiClient.GetAsync<CattleDetailDto>($"/api/v1/ganado/{id}");
     }
 
     public async Task<bool> CreateAsync(CattleDto dto)
     {
-        var response = await _apiClient.PostAsync("/api/cattle", dto);
+        // Backend Python exige dict (no null) para custom_data.
+        dto.CustomData ??= new Dictionary<string, string>();
+        var response = await _apiClient.PostAsync("/api/v1/ganado", dto);
         return response.IsSuccessStatusCode;
     }
 
     public async Task<bool> UpdateAsync(int id, CattleDto dto)
     {
-        var response = await _apiClient.PutAsync($"/api/cattle/{id}", dto);
+        dto.CustomData ??= new Dictionary<string, string>();
+        var response = await _apiClient.PutAsync($"/api/v1/ganado/{id}", dto);
         return response.IsSuccessStatusCode;
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var response = await _apiClient.DeleteAsync($"/api/cattle/{id}");
+        var response = await _apiClient.DeleteAsync($"/api/v1/ganado/{id}");
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<bool> UploadImageAsync(Guid cattleId, IBrowserFile file, string imageType)
-{
-    long maxFileSize = 1024 * 1024 * 5; // 5MB match your Razor const
-
-    try 
+    public async Task<bool> UploadImageAsync(string? cattleId, IBrowserFile file, string imageType)
     {
-        using var content = new MultipartFormDataContent();
+        long maxFileSize = 1024 * 1024 * 5; // 5MB
 
-        // 1. Add form fields (Must match [FromForm] names in Controller)
-        content.Add(new StringContent(cattleId.ToString()), "cattleGlobalId");
-        content.Add(new StringContent(imageType), "imageType");
+        try
+        {
+            using var content = new MultipartFormDataContent();
 
-        // 2. Add the file stream
-        // We use StreamContent to avoid loading the whole file into RAM (Base64)
-        var fileContent = new StreamContent(file.OpenReadStream(maxFileSize));
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+            // El backend Python espera nombres en snake_case (ver app/routers/ganado.py).
+            content.Add(new StringContent(cattleId ?? ""), "cattle_global_id");
+            content.Add(new StringContent(imageType), "image_type");
 
-        // "file" is the name of the parameter in your Controller: UploadImage(..., IFormFile file)
-        content.Add(fileContent, "file", file.Name);
+            var fileContent = new StreamContent(file.OpenReadStream(maxFileSize));
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+            content.Add(fileContent, "file", file.Name);
 
-        // NOTE: I am assuming your _apiClient wraps HttpClient. 
-        // If ApiClient.PostAsync only takes objects for JSON, you should use the raw HttpClient here.
-        // Assuming _apiClient has a public HttpClient or you inject HttpClient directly:
-        
-        // Example if using direct HttpClient:
-        // var response = await _httpClient.PostAsync("/api/cattle/upload-image", content);
-        
-        // Adapting to your existing _apiClient pattern (assuming it can handle HttpContent or you add this method):
-        var response = await _apiClient.PostContentAsync("/api/cattle/upload-image", content);
-        var text = await response.Content.ReadAsStringAsync();
-        Console.WriteLine(text);
-        return response.IsSuccessStatusCode;
+            var response = await _apiClient.PostContentAsync(
+                "/api/v1/ganado/upload-imagen", content);
+            var text = await response.Content.ReadAsStringAsync();
+            Console.WriteLine(text);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Service Upload Error: {ex.Message}");
+            return false;
+        }
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Service Upload Error: {ex.Message}");
-        return false;
-    }
-}
 }

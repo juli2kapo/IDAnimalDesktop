@@ -1,0 +1,63 @@
+@using IdAnimal.Web.Services
+@* Sello circular de certificación, dibujado con SVG inline para no depender de imágenes externas. *@
+
+<div class="cert-seal" title="@Cert.Label" style="--seal-color: @Cert.Color;">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- Anillo exterior -->
+        <circle cx="50" cy="50" r="46" fill="none" stroke="var(--seal-color)" stroke-width="3"/>
+        <!-- Anillo interior con texto curvo -->
+        <circle cx="50" cy="50" r="38" fill="var(--seal-color)" />
+        <!-- Estrella decorativa arriba -->
+        <path d="M50 18 L52.5 25 L60 25 L54 30 L56.5 37 L50 32.5 L43.5 37 L46 30 L40 25 L47.5 25 Z"
+              fill="white" opacity="0.85"/>
+        <!-- Texto principal -->
+        <text x="50" y="62" text-anchor="middle"
+              font-family="'Roboto Condensed', sans-serif"
+              font-size="@FontSize"
+              font-weight="900"
+              fill="white"
+              letter-spacing="0.5">
+            @Cert.ShortLabel
+        </text>
+        <!-- Subrayado decorativo -->
+        <line x1="30" y1="74" x2="70" y2="74" stroke="white" stroke-width="1.5" opacity="0.7"/>
+        <text x="50" y="84" text-anchor="middle"
+              font-family="'Roboto Condensed', sans-serif"
+              font-size="6"
+              font-weight="700"
+              fill="white"
+              opacity="0.85"
+              letter-spacing="1">
+            CERTIFIED
+        </text>
+    </svg>
+</div>
+
+<style>
+    .cert-seal {
+        display: inline-block;
+        width: 62px;
+        height: 62px;
+        flex-shrink: 0;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.18));
+    }
+
+    .cert-seal svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+</style>
+
+@code {
+    [Parameter, EditorRequired] public CertCatalog.Cert Cert { get; set; } = default!;
+
+    // Tamaño dinámico para que las etiquetas largas no rebasen el círculo.
+    private string FontSize => Cert.ShortLabel.Length switch
+    {
+        <= 4  => "16",
+        <= 6  => "13",
+        <= 8  => "11",
+        _      => "9",
+    };
+}

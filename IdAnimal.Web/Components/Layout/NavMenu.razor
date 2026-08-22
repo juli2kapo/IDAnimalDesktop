@@ -35,6 +35,8 @@
 </div>
 
 <style>
+    /* La mayoría de estilos del nav viven en NavMenu.razor.css.
+       Acá sólo lo específico del componente. */
     .user-info {
         padding: 10px 15px;
         color: var(--text-secondary);
@@ -51,27 +53,6 @@
     }
 
     .btn-link:hover {
-        color: var(--accent-orange) !important;
-    }
-
-    .navbar-brand {
-        color: var(--accent-orange) !important;
-        font-weight: bold;
-        font-size: 1.5rem;
-    }
-
-    .nav-link {
-        color: var(--text-primary) !important;
-        transition: color 0.2s, background-color 0.2s;
-    }
-
-    .nav-link:hover {
-        color: var(--accent-orange) !important;
-        background-color: rgba(255, 107, 0, 0.1) !important;
-    }
-
-    .nav-link.active {
-        color: var(--accent-orange) !important;
-        background-color: rgba(255, 107, 0, 0.15) !important;
+        color: var(--green-dark) !important;
     }
 </style>

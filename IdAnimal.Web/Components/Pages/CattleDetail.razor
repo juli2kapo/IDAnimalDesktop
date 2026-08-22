@@ -3,6 +3,8 @@
 @using IdAnimal.Shared.DTOs
 @using IdAnimal.Web.Services
 @inject CattleService CattleService
+@inject QrService QrService
+@inject EstablishmentService EstablishmentService
 @inject NavigationManager Navigation
 
 <PageTitle>Detalle del Animal - IdAnimal</PageTitle>
@@ -38,11 +40,54 @@
         </div>
     }
 
-    @if (isLoading)
+    @if (isLoading || cattle == null && !loadFailed)
     {
-        <div class="text-center mt-5">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Cargando...</span>
+        <div class="cattle-card-layout">
+            <div class="ca-photo skeleton-block"></div>
+            <div class="ca-card ca-sanitary">
+                <div class="ca-card-header">
+                    <span class="skeleton-icon"></span>
+                    <span class="skeleton-line skeleton-line-md"></span>
+                </div>
+                <span class="skeleton-line skeleton-line-full"></span>
+                <span class="skeleton-line skeleton-line-full"></span>
+                <span class="skeleton-line skeleton-line-full"></span>
+                <span class="skeleton-line skeleton-line-lg"></span>
+            </div>
+            <div class="ca-card ca-feed">
+                <div class="ca-card-header">
+                    <span class="skeleton-icon"></span>
+                    <span class="skeleton-line skeleton-line-md"></span>
+                </div>
+                <span class="skeleton-line skeleton-line-full"></span>
+                <span class="skeleton-line skeleton-bar"></span>
+                <span class="skeleton-line skeleton-line-full"></span>
+                <span class="skeleton-line skeleton-bar"></span>
+                <span class="skeleton-line skeleton-line-full"></span>
+                <span class="skeleton-line skeleton-bar"></span>
+                <span class="skeleton-line skeleton-pill"></span>
+            </div>
+            <div class="ca-card ca-caravan">
+                <div class="ca-card-header">
+                    <span class="skeleton-icon"></span>
+                    <span class="skeleton-line skeleton-line-sm"></span>
+                </div>
+                <div class="skeleton-qr"></div>
+            </div>
+            <div class="ca-card ca-attrs">
+                <div class="ca-card-header">
+                    <span class="skeleton-icon"></span>
+                    <span class="skeleton-line skeleton-line-md"></span>
+                </div>
+                <div class="ca-attrs-grid">
+                    @for (var i = 0; i < 6; i++)
+                    {
+                        <div>
+                            <span class="skeleton-line skeleton-line-sm"></span>
+                            <span class="skeleton-line skeleton-line-md"></span>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     }
@@ -54,142 +99,197 @@
     }
     else
     {
-        <div class="row">
-            <!-- Main Info Card -->
-            <div class="col-md-8">
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h2 class="cattle-title">
-                            <i class="bi bi-tag"></i> @cattle.Caravan
-                        </h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="detail-label">Establecimiento</label>
-                                <p class="detail-value">
-                                    <i class="bi bi-building"></i> @(cattle.EstablishmentName ?? "No asignado")
-                                </p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="detail-label">Género</label>
-                                <p class="detail-value">
-                                    <i class="bi bi-gender-ambiguous"></i> @(cattle.Gender ?? "No especificado")
-                                </p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="detail-label">Peso (kg)</label>
-                                <p class="detail-value">
-                                    <i class="bi bi-speedometer"></i> @(cattle.Weight?.ToString() ?? "No especificado")
-                                </p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="detail-label">Origen</label>
-                                <p class="detail-value">
-                                    <i class="bi bi-geo-alt"></i> @(cattle.Origin ?? "No especificado")
-                                </p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="detail-label">GDM (Ganancia Diaria Media)</label>
-                                <p class="detail-value">
-                                    <i class="bi bi-graph-up"></i> @(cattle.GDM?.ToString() ?? "No especificado")
-                                </p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="detail-label">Edad</label>
-                                <p class="detail-value">
-                                    <i class="bi bi-calendar"></i> @(cattle.Age?.ToString() ?? "No especificada")
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Custom Data Card -->
-                @if (cattle.CustomData != null && cattle.CustomData.Any())
+        <div class="cattle-card-layout">
+            <!-- Foto del animal -->
+            <div class="ca-photo">
+                @{
+                    var firstImage = ApiUrl.Resolve(
+                        displayImages.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p)));
+                }
+                @if (firstImage is not null)
                 {
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5><i class="bi bi-list-check"></i> Datos Personalizados</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                @foreach (var customField in cattle.CustomData)
-                                {
-                                    <div class="col-md-6 mb-3">
-                                        <label class="detail-label">@customField.Key</label>
-                                        <p class="detail-value">@customField.Value</p>
-                                    </div>
-                                }
-                            </div>
-                        </div>
+                    <img src="@firstImage" alt="@cattle.Caravan"
+                         @onclick="() => OpenImageModal(firstImage)" />
+                }
+                else
+                {
+                    <div class="ca-photo-placeholder" @onclick="ShowUploadModal">
+                        <i class="bi bi-image"></i>
+                        <span>Subir foto</span>
                     </div>
                 }
             </div>
 
-            <!-- Images & Videos Sidebar -->
-            <div class="col-md-4">
-                <div class="card mb-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5><i class="bi bi-images"></i> Imágenes (@displayImages.Count)</h5>
-                        <button class="btn btn-sm btn-outline-primary" @onclick="ShowUploadModal">
-                            <i class="bi bi-plus-lg"></i>
-                        </button>
+            <!-- Historia sanitaria -->
+            <div class="ca-card ca-sanitary">
+                <div class="ca-card-header">
+                    <span class="ca-icon ca-icon-red"><i class="bi bi-heart-pulse-fill"></i></span>
+                    <h3>Historia sanitaria</h3>
+                </div>
+                <div class="ca-sanitary-text">
+                    @if (!string.IsNullOrWhiteSpace(cattle.SanitaryHistory))
+                    {
+                        @cattle.SanitaryHistory
+                    }
+                    else
+                    {
+                        <span class="ca-empty">Sin historia sanitaria registrada.</span>
+                    }
+                </div>
+            </div>
+
+            <!-- Alimentación y peso -->
+            <div class="ca-card ca-feed">
+                <div class="ca-card-header">
+                    <span class="ca-icon ca-icon-orange"><i class="bi bi-bar-chart-fill"></i></span>
+                    <h3>Alimentación y Peso</h3>
+                </div>
+                <div class="ca-bars">
+                    <FeedBar Label="Alimentación en el campo" Pct="@cattle.FeedPasturePct" Color="#A8C58F" />
+                    <FeedBar Label="Alimentación Feedlot"     Pct="@cattle.FeedFeedlotPct" Color="#B89968" />
+                    <FeedBar Label="Alimentación Orgánica"    Pct="@cattle.FeedOrganicPct" Color="#88AED4" />
+                    <FeedBar Label="Peso"                      Pct="@cattle.WeightProgressPct" Color="#D49A9A" />
+                </div>
+                <div class="ca-weight-bar">
+                    <span><i class="bi bi-clipboard-data"></i> Peso</span>
+                    <strong>@(cattle.Weight?.ToString("0") ?? "—") Kg</strong>
+                </div>
+            </div>
+
+            <!-- Caravana + QR -->
+            <div class="ca-card ca-caravan">
+                <div class="ca-card-header">
+                    <span class="ca-icon ca-icon-orange"><i class="bi bi-tag-fill"></i></span>
+                    <div>
+                        <h3 class="ca-caravan-title">Caravana</h3>
+                        <div class="ca-caravan-num">@cattle.Caravan</div>
                     </div>
-                    <div class="card-body">
-                        @if (displayImages.Any())
-                        {
-                            <div class="image-grid">
-                                @foreach (var imgUrl in displayImages)
-                                {
-                                    <div class="image-thumbnail" @onclick="() => OpenImageModal(imgUrl)">
-                                        <img src="@imgUrl" alt="Animal Image" />
-                                        <div class="overlay">
-                                            <i class="bi bi-arrows-fullscreen"></i>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="images-placeholder">
-                                <i class="bi bi-image placeholder-icon"></i>
-                                <p class="text-secondary mt-2">No hay imágenes</p>
-                                <button class="btn btn-primary btn-sm mt-2" @onclick="ShowUploadModal">
-                                    <i class="bi bi-upload"></i> Subir Imagen
-                                </button>
-                            </div>
-                        }
+                </div>
+                <div class="ca-qr">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=0&data=@(Uri.EscapeDataString(cattle.Caravan))"
+                         alt="QR @cattle.Caravan" />
+                </div>
+            </div>
+
+            <!-- Atributos -->
+            <div class="ca-card ca-attrs">
+                <div class="ca-card-header">
+                    <span class="ca-icon ca-icon-red"><i class="bi bi-heart-fill"></i></span>
+                    <h3>Id.animal + atributos</h3>
+                </div>
+                <div class="ca-attrs-grid">
+                    <div class="ca-attr">
+                        <div class="ca-attr-label">Nacimiento</div>
+                        <div class="ca-attr-value">@(cattle.BirthDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                    </div>
+                    <div class="ca-attr">
+                        <div class="ca-attr-label">Género</div>
+                        <div class="ca-attr-value">@(cattle.Gender ?? "—")</div>
+                    </div>
+                    <div class="ca-attr">
+                        <div class="ca-attr-label">RENSPA</div>
+                        <div class="ca-attr-value">@(establishmentRenspa ?? "—")</div>
+                    </div>
+                    <div class="ca-attr">
+                        <div class="ca-attr-label">Establecimiento</div>
+                        <div class="ca-attr-value">@(cattle.EstablishmentName ?? "—")</div>
+                    </div>
+                    <div class="ca-attr">
+                        <div class="ca-attr-label">Origen</div>
+                        <div class="ca-attr-value">@(cattle.Origin ?? "—")</div>
+                    </div>
+                    <div class="ca-attr">
+                        <div class="ca-attr-label">GDM</div>
+                        <div class="ca-attr-value">@(cattle.GDM?.ToString("0.00") ?? "—")</div>
                     </div>
                 </div>
 
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="bi bi-camera-video"></i> Videos (@displayVideos.Count)</h5>
-                    </div>
-                    <div class="card-body">
-                        @if (displayVideos.Any())
+                @{
+                    var certs = CertCatalog.Parse(cattle.Certifications).ToList();
+                }
+                @if (certs.Any())
+                {
+                    <div class="ca-cert-row">
+                        @foreach (var cert in certs)
                         {
-                            <div class="d-flex flex-column gap-2">
-                                @foreach (var vidUrl in displayVideos)
-                                {
-                                    <video controls style="width: 100%; border-radius: 4px;">
-                                        <source src="@vidUrl" type="video/mp4">
-                                        Your browser does not support the video tag.
-                                    </video>
-                                }
-                            </div>
+                            <CertSeal Cert="cert" />
                         }
-                        else
+                    </div>
+                }
+            </div>
+
+            @if (cattle.CustomData != null && cattle.CustomData.Any())
+            {
+                <div class="ca-card ca-custom">
+                    <div class="ca-card-header">
+                        <span class="ca-icon ca-icon-green"><i class="bi bi-list-check"></i></span>
+                        <h3>Datos personalizados</h3>
+                    </div>
+                    <div class="ca-attrs-grid">
+                        @foreach (var f in cattle.CustomData)
                         {
-                            <div class="text-center py-3 text-secondary">
-                                <small>No hay videos disponibles</small>
+                            <div class="ca-attr">
+                                <div class="ca-attr-label">@f.Key</div>
+                                <div class="ca-attr-value">@f.Value</div>
                             </div>
                         }
                     </div>
                 </div>
-            </div>
+            }
+
+            @if (qrDataUri != null && publicUrl != null)
+            {
+                <div class="ca-card ca-qr">
+                    <div class="ca-card-header">
+                        <span class="ca-icon ca-icon-green"><i class="bi bi-qr-code"></i></span>
+                        <h3>Ficha pública</h3>
+                    </div>
+                    <div class="ca-qr-body">
+                        <img class="ca-qr-img" src="@qrDataUri" alt="Código QR de la ficha pública" />
+                        <div class="ca-qr-side">
+                            <p class="ca-qr-hint">
+                                Escaneá el código para abrir la ficha pública del animal.
+                                No requiere iniciar sesión.
+                            </p>
+                            <a class="ca-qr-link" href="@publicUrl" target="_blank" rel="noopener">@publicUrl</a>
+                            <div class="ca-qr-actions">
+                                <a class="btn btn-sm btn-primary"
+                                   href="@qrDataUri" download="@($"{cattle.Caravan}_qr.svg")">
+                                    <i class="bi bi-download"></i> Descargar QR
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (displayImages.Count > 1 || displayVideos.Any())
+            {
+                <div class="ca-card ca-media">
+                    <div class="ca-card-header">
+                        <span class="ca-icon ca-icon-orange"><i class="bi bi-images"></i></span>
+                        <h3>Imágenes y videos</h3>
+                        <button class="btn btn-sm btn-outline-primary ms-auto" @onclick="ShowUploadModal">
+                            <i class="bi bi-plus-lg"></i> Subir
+                        </button>
+                    </div>
+                    <div class="ca-thumb-grid">
+                        @foreach (var imgUrl in displayImages.Skip(1))
+                        {
+                            var resolved = ApiUrl.Resolve(imgUrl);
+                            <div class="ca-thumb" @onclick="() => OpenImageModal(resolved!)">
+                                <img src="@resolved" alt="Imagen" />
+                            </div>
+                        }
+                        @foreach (var vidUrl in displayVideos)
+                        {
+                            <video class="ca-thumb-video" controls>
+                                <source src="@ApiUrl.Resolve(vidUrl)" type="video/mp4">
+                            </video>
+                        }
+                    </div>
+                </div>
+            }
         </div>
     }
 </div>
@@ -212,7 +312,7 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Peso (kg)</label>
-                                <InputNumber class="form-control" @bind-Value="cattle.Weight" onkeydown="preventNonNumeric(event)" />
+                                <InputNumber class="form-control" step="0.01" lang="en" @bind-Value="cattle.Weight" />
                             </div>
                         </div>
                         <div class="row">
@@ -232,11 +332,68 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">GDM</label>
-                                <InputNumber class="form-control" @bind-Value="cattle.GDM" onkeydown="preventNonNumeric(event)" />
+                                <InputNumber class="form-control" step="0.01" lang="en" @bind-Value="cattle.GDM" />
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Edad</label>
-                                <InputNumber class="form-control" @bind-Value="cattle.Age" onkeydown="preventNonNumeric(event)" />
+                                <InputNumber class="form-control" step="1" lang="en" @bind-Value="cattle.Age" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nacimiento</label>
+                                <InputDate class="form-control" @bind-Value="cattle.BirthDate" />
+                            </div>
+                        </div>
+
+                        <hr class="form-divider" />
+                        <h6 class="form-section-title">Historia sanitaria</h6>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <InputTextArea class="form-control" rows="4"
+                                               placeholder="Ej: EST. LIBRE DE BRUCELOSIS, fechas de vacunación, antecedentes..."
+                                               @bind-Value="cattle.SanitaryHistory" />
+                            </div>
+                        </div>
+
+                        <h6 class="form-section-title">Alimentación y peso (%)</h6>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Campo</label>
+                                <InputNumber class="form-control" min="0" max="100" step="1" lang="en"
+                                             @bind-Value="cattle.FeedPasturePct" />
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Feedlot</label>
+                                <InputNumber class="form-control" min="0" max="100" step="1" lang="en"
+                                             @bind-Value="cattle.FeedFeedlotPct" />
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Orgánica</label>
+                                <InputNumber class="form-control" min="0" max="100" step="1" lang="en"
+                                             @bind-Value="cattle.FeedOrganicPct" />
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Peso (progreso)</label>
+                                <InputNumber class="form-control" min="0" max="100" step="1" lang="en"
+                                             @bind-Value="cattle.WeightProgressPct" />
+                            </div>
+                        </div>
+
+                        <h6 class="form-section-title">Certificaciones</h6>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <div class="cert-checkboxes">
+                                    @foreach (var cert in CertCatalog.All)
+                                    {
+                                        <label class="cert-checkbox">
+                                            <input type="checkbox"
+                                                   checked="@HasCert(cert.Key)"
+                                                   @onchange="e => ToggleCert(cert.Key, (bool)e.Value!)" />
+                                            <span class="cert-checkbox-label">@cert.Label</span>
+                                        </label>
+                                    }
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -290,12 +447,12 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Subir Imagen</h5>
+                    <h5 class="modal-title">Subir Imágenes</h5>
                     <button type="button" class="btn-close" @onclick="HideUploadModal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Tipo de Imagen</label>
+                        <label class="form-label">Tipo de Imagen (para la selección)</label>
                         <select class="form-select" @bind="imageType">
                             <option value="Snout">Hocico (Para Análisis)</option>
                             <option value="Full">Cuerpo Completo</option>
@@ -307,15 +464,33 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Seleccionar imagen</label>
-                        <InputFile OnChange="@HandleFileSelection" class="form-control" accept=".jpg,.jpeg,.png" />
+                        <div class="upload-drop-zone">
+                            <InputFile OnChange="@HandleFileSelection" multiple class="form-control" accept=".jpg,.jpeg,.png" />
+                            <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                            <div>
+                                <strong>Haga clic o arrastre imágenes aquí</strong>
+                            </div>
+                        </div>
                     </div>
 
-                    @if (selectedFile != null)
+                    @if (selectedFiles.Any())
                     {
-                        <div class="alert alert-info">
-                            <i class="bi bi-file-earmark-image"></i> @selectedFile.Name 
-                            <small class="text-muted">(@(selectedFile.Size / 1024) KB)</small>
+                        <div class="mb-3">
+                            <label class="detail-label">Archivos Seleccionados (@selectedFiles.Count)</label>
+                            <div class="selected-files-list">
+                                @foreach (var file in selectedFiles)
+                                {
+                                    <div class="file-list-item">
+                                        <div class="text-truncate">
+                                            <i class="bi bi-file-earmark-image text-primary"></i> 
+                                            @file.Name <small class="text-muted">(@(file.Size / 1024) KB)</small>
+                                        </div>
+                                        <button class="btn btn-sm btn-link text-danger" @onclick="() => RemoveFile(file)">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
                         </div>
                     }
 
@@ -323,15 +498,23 @@
                     {
                         <div class="alert alert-danger">@uploadError</div>
                     }
+
+                    @if (!string.IsNullOrEmpty(uploadStatus))
+                    {
+                        <div class="alert alert-info">
+                            @if (isUploading) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                            @uploadStatus
+                        </div>
+                    }
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @onclick="HideUploadModal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" @onclick="UploadSelectedImage" disabled="@(selectedFile == null || isUploading)">
+                    <button type="button" class="btn btn-primary" @onclick="UploadSelectedImages" disabled="@(!selectedFiles.Any() || isUploading)">
                         @if (isUploading)
                         {
                             <span class="spinner-border spinner-border-sm"></span>
                         }
-                        Subir
+                        Subir Imágenes
                     </button>
                 </div>
             </div>
@@ -513,6 +696,494 @@
     .card-header h5 {
         color: var(--text-primary) !important;
     }
+
+    /* ── Form helpers compartidos con Cattle.razor ───────────── */
+    .form-divider {
+        border: 0;
+        border-top: 1.5px dashed var(--border-color);
+        margin: 18px 0 16px;
+    }
+
+    .form-section-title {
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+    }
+
+    .cert-checkboxes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+    }
+
+    .cert-checkbox {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        background: var(--card-bg);
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+    .cert-checkbox:has(input:checked) {
+        border-color: var(--primary-green);
+        background: var(--green-light);
+    }
+
+    .cert-checkbox-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    /* ── Layout estilo "carta del animal" ────────────────────── */
+    .cattle-card-layout {
+        display: grid;
+        grid-template-columns: 1.05fr 1.4fr 1.4fr;
+        gap: 18px;
+        margin-top: 8px;
+    }
+
+    .ca-card {
+        background: var(--card-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius);
+        padding: 18px 18px 16px;
+        box-shadow: var(--shadow);
+    }
+
+    .ca-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+        .ca-card-header h3 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+            color: var(--text-primary);
+        }
+
+    .ca-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: white;
+        font-size: 18px;
+    }
+
+    .ca-icon-orange { background: var(--warning); }
+    .ca-icon-red    { background: #C84A2A; }
+    .ca-icon-green  { background: var(--primary-green); }
+
+    /* Top row cards: 10% más compactas en altura */
+    .ca-photo,
+    .ca-sanitary,
+    .ca-feed {
+        padding-top: 14px;
+        padding-bottom: 12px;
+    }
+
+        .ca-photo .ca-card-header,
+        .ca-sanitary .ca-card-header,
+        .ca-feed .ca-card-header {
+            margin-bottom: 10px;
+        }
+
+    /* Foto principal (col-1, row-1) */
+    .ca-photo {
+        grid-column: 1;
+        grid-row: 1;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        border: 1.5px solid var(--border-color);
+        background: var(--surface-bg);
+        min-height: 230px;
+        display: flex;
+        align-items: stretch;
+        cursor: pointer;
+        padding: 0;
+    }
+
+        .ca-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+    .ca-photo-placeholder {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-hint);
+        gap: 8px;
+    }
+
+        .ca-photo-placeholder i {
+            font-size: 48px;
+        }
+
+        .ca-photo-placeholder span {
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 12px;
+        }
+
+    /* Historia sanitaria (col-2, row-1) */
+    .ca-sanitary {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .ca-sanitary-text {
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--text-primary);
+        white-space: pre-line;
+    }
+
+    .ca-empty {
+        color: var(--text-hint);
+        font-style: italic;
+    }
+
+    /* Alimentación y peso (col-3, row-1) */
+    .ca-feed {
+        grid-column: 3;
+        grid-row: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .ca-bars {
+        flex: 1;
+    }
+
+    .ca-weight-bar {
+        margin-top: 8px;
+        background: var(--green-dark);
+        color: white;
+        padding: 9px 16px;
+        border-radius: var(--border-radius-sm);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+    }
+
+        .ca-weight-bar i {
+            margin-right: 8px;
+        }
+
+        .ca-weight-bar strong {
+            font-size: 18px;
+            font-weight: 900;
+        }
+
+    /* Caravana + QR (col-1, row-2) */
+    .ca-caravan {
+        grid-column: 1;
+        grid-row: 2;
+        text-align: center;
+    }
+
+    .ca-caravan-title {
+        margin-bottom: 2px !important;
+    }
+
+    .ca-caravan-num {
+        font-family: 'Roboto Condensed', monospace;
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 600;
+        letter-spacing: 0.4px;
+    }
+
+    .ca-qr {
+        margin-top: 8px;
+        display: flex;
+        justify-content: center;
+        background: white;
+        padding: 12px;
+        border-radius: var(--border-radius-sm);
+        border: 1.5px solid var(--border-color);
+    }
+
+        .ca-qr img {
+            display: block;
+            width: 100%;
+            max-width: 200px;
+            height: auto;
+        }
+
+    /* Atributos (col-2/3, row-2) */
+    .ca-attrs {
+        grid-column: 2 / span 2;
+        grid-row: 2;
+    }
+
+    .ca-attrs-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px 22px;
+    }
+
+    .ca-attr-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--text-secondary);
+        margin-bottom: 2px;
+    }
+
+    .ca-attr-value {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .ca-cert-row {
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1.5px dashed var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    /* Datos personalizados / media: filas adicionales */
+    .ca-custom,
+    .ca-media {
+        grid-column: 1 / -1;
+    }
+
+    .ca-thumb-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
+    }
+
+    .ca-thumb {
+        aspect-ratio: 1;
+        border-radius: var(--border-radius-sm);
+        overflow: hidden;
+        border: 1.5px solid var(--border-color);
+        cursor: pointer;
+    }
+
+        .ca-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+    .ca-thumb-video {
+        width: 100%;
+        border-radius: var(--border-radius-sm);
+        border: 1.5px solid var(--border-color);
+    }
+
+    @@media (max-width: 1100px) {
+        .cattle-card-layout {
+            grid-template-columns: 1fr 1fr;
+        }
+        .ca-photo     { grid-column: 1 / -1; grid-row: auto; min-height: 240px; }
+        .ca-sanitary  { grid-column: 1; grid-row: auto; }
+        .ca-feed      { grid-column: 2; grid-row: auto; }
+        .ca-caravan   { grid-column: 1; grid-row: auto; }
+        .ca-attrs     { grid-column: 2; grid-row: auto; }
+    }
+
+    @@media (max-width: 720px) {
+        .cattle-card-layout { grid-template-columns: 1fr; }
+        .ca-photo, .ca-sanitary, .ca-feed,
+        .ca-caravan, .ca-attrs, .ca-custom, .ca-media {
+            grid-column: 1 !important;
+            grid-row: auto !important;
+        }
+        .ca-attrs-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ── Skeleton loaders ────────────────────────────────────── */
+    @@keyframes skeleton-shimmer {
+        0%   { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+
+    .skeleton-block,
+    .skeleton-line,
+    .skeleton-icon,
+    .skeleton-bar,
+    .skeleton-pill,
+    .skeleton-qr {
+        background: linear-gradient(
+            90deg,
+            var(--surface-bg) 0%,
+            var(--hover-bg) 50%,
+            var(--surface-bg) 100%
+        );
+        background-size: 200% 100%;
+        animation: skeleton-shimmer 1.4s ease-in-out infinite;
+        border-radius: var(--border-radius-sm);
+        display: block;
+    }
+
+    .skeleton-block { width: 100%; height: 100%; min-height: 280px; }
+
+    .skeleton-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        flex-shrink: 0;
+    }
+
+    .skeleton-line {
+        height: 12px;
+        margin: 6px 0;
+    }
+
+    .skeleton-line-sm   { width: 40%; }
+    .skeleton-line-md   { width: 60%; }
+    .skeleton-line-lg   { width: 80%; }
+    .skeleton-line-full { width: 100%; }
+
+    .skeleton-bar {
+        height: 6px;
+        width: 100%;
+        margin: 6px 0 14px;
+        border-radius: 3px;
+    }
+
+    .skeleton-pill {
+        height: 44px;
+        width: 100%;
+        margin-top: 12px;
+        border-radius: var(--border-radius-sm);
+    }
+
+    .skeleton-qr {
+        width: 100%;
+        max-width: 200px;
+        aspect-ratio: 1;
+        margin: 8px auto 0;
+        border-radius: var(--border-radius-sm);
+    }
+
+    /* --- QR de la ficha pública --- */
+    .ca-qr-body {
+        display: flex;
+        gap: 18px;
+        align-items: flex-start;
+        padding: 16px;
+        flex-wrap: wrap;
+    }
+
+    .ca-qr-img {
+        width: 148px;
+        height: 148px;
+        flex: none;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        background: #fff;
+        padding: 6px;
+    }
+
+    .ca-qr-side {
+        flex: 1 1 220px;
+        min-width: 0;
+    }
+
+    .ca-qr-hint {
+        margin: 0 0 10px;
+        color: var(--text-secondary);
+        font-size: .9rem;
+        line-height: 1.4;
+    }
+
+    .ca-qr-link {
+        display: block;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: .78rem;
+        color: var(--primary-green);
+        overflow-wrap: anywhere;
+        margin-bottom: 12px;
+    }
+
+    /* --- Subida múltiple de imágenes --- */
+    .upload-drop-zone {
+        border: 2px dashed #dee2e6;
+        border-radius: 6px;
+        padding: 30px;
+        text-align: center;
+        background-color: rgba(0,0,0,0.02);
+        position: relative;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .upload-drop-zone:hover {
+        border-color: var(--accent-orange);
+        background-color: rgba(255, 140, 0, 0.05);
+    }
+
+    /* This stretches the input over the whole parent div */
+    .upload-drop-zone ::deep input[type=file] {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 10;
+    }
+
+    .upload-icon {
+        font-size: 2rem;
+        color: var(--text-secondary);
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    .selected-files-list {
+        max-height: 150px;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background-color: var(--primary-bg);
+    }
+
+    .file-list-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .file-list-item:last-child {
+        border-bottom: none;
+    }
 </style>
 
 @code {
@@ -520,7 +1191,9 @@
     public int Id { get; set; }
 
     private CattleDto? cattle;
+    private string? establishmentRenspa;
     private bool isLoading = true;
+    private bool loadFailed = false;
     private string imageType = "snout";
     private bool isSaving = false;
     private bool showEditModal = false;
@@ -530,21 +1203,33 @@
     private bool isUploading = false;
 
 
+    // QR de la ficha pública. Se calcula una vez por animal (no en el render):
+    // codificar el QR y pasarlo a base64 no es gratis y no cambia entre renders.
+    private string? qrDataUri;
+    private string? publicUrl;
+
     private List<string> displayImages = new();
     private List<string> displayVideos = new();
     private bool showImageModal = false;
     private string? currentImageUrl;
     private string? uploadError;
-    private IBrowserFile? selectedFile;
+    private string? uploadStatus; // Feedback during loop
+    private List<IBrowserFile> selectedFiles = new();
     private const long MaxFileSize = 1024 * 1024 * 5; // 5 MB limit
+    private const int MaxAllowedFiles = 10;
 
     private string? errorMessage;
     private string? successMessage;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Console.WriteLine($"[CattleDetail] OnInitializedAsync called for cattle ID: {Id}");
+        // Cargamos en OnAfterRenderAsync porque ProtectedLocalStorage (token JWT) sólo está
+        // disponible una vez que la conexión SignalR/JS está activa. Si lo hiciéramos en
+        // OnInitializedAsync, el token sería null en pre-render y la API devolvería 401/404.
+        if (!firstRender) return;
+        Console.WriteLine($"[CattleDetail] OnAfterRenderAsync first render for cattle ID: {Id}");
         await LoadCattle();
+        StateHasChanged();
     }
 
     private async Task LoadCattle()
@@ -577,21 +1262,61 @@
                     EstablishmentName = detailDto.EstablishmentName,
                     ImageCount = detailDto.Images?.Count ?? 0,
                     VideoCount = detailDto.Videos?.Count ?? 0,
-                    CustomData = detailDto.CustomData
+                    CustomData = detailDto.CustomData,
+                    BirthDate = detailDto.BirthDate,
+                    SanitaryHistory = detailDto.SanitaryHistory,
+                    FeedPasturePct = detailDto.FeedPasturePct,
+                    FeedFeedlotPct = detailDto.FeedFeedlotPct,
+                    FeedOrganicPct = detailDto.FeedOrganicPct,
+                    WeightProgressPct = detailDto.WeightProgressPct,
+                    Certifications = detailDto.Certifications,
                 };
-                displayImages = new List<string>();
-                
-                // Add Snout Images
-                if (detailDto.Images != null) 
-                    displayImages.AddRange(detailDto.Images.Select(i => i.Path));
-                
-                // Add Full Body Images
-                if (detailDto.FullImages != null) 
-                    displayImages.AddRange(detailDto.FullImages.Select(i => i.Path));
 
-                // Populate Videos if needed
+                // QR de la ficha pública. Si fallara la codificación no queremos
+                // tumbar toda la ficha: la tarjeta simplemente no se muestra.
+                if (!string.IsNullOrWhiteSpace(cattle.GlobalId))
+                {
+                    try
+                    {
+                        publicUrl = QrService.PublicUrl(cattle.GlobalId);
+                        qrDataUri = QrService.ToDataUri(publicUrl);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[CattleDetail] No se pudo generar el QR: {ex.Message}");
+                        publicUrl = null;
+                        qrDataUri = null;
+                    }
+                }
+
+                displayImages = new List<string>();
+
+                if (detailDto.Images != null)
+                    displayImages.AddRange(
+                        detailDto.Images.Select(i => i.Path).Where(p => !string.IsNullOrWhiteSpace(p)));
+
+                if (detailDto.FullImages != null)
+                    displayImages.AddRange(
+                        detailDto.FullImages.Select(i => i.Path).Where(p => !string.IsNullOrWhiteSpace(p)));
+
                 if (detailDto.Videos != null)
-                    displayVideos = detailDto.Videos.Select(v => v.Path).ToList();
+                    displayVideos = detailDto.Videos.Select(v => v.Path)
+                        .Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
+
+                // RENSPA del establecimiento dueño (si está disponible)
+                try
+                {
+                    if (cattle.EstablishmentId > 0)
+                    {
+                        var estab = await EstablishmentService.GetByIdAsync(cattle.EstablishmentId);
+                        establishmentRenspa = estab?.Renspa;
+                    }
+                }
+                catch
+                {
+                    // Sin RENSPA, la card muestra "—"
+                }
+
                 Console.WriteLine($"[CattleDetail] Cattle DTO created successfully");
             }
             else
@@ -610,6 +1335,7 @@
         finally
         {
             isLoading = false;
+            loadFailed = cattle == null;
             Console.WriteLine($"[CattleDetail] LoadCattle completed. isLoading = false");
         }
     }
@@ -687,6 +1413,15 @@
         currentImageUrl = null;
     }
 
+    private bool HasCert(string key)
+        => cattle != null && CertCatalog.Contains(cattle.Certifications, key);
+
+    private void ToggleCert(string key, bool include)
+    {
+        if (cattle == null) return;
+        cattle.Certifications = CertCatalog.Toggle(cattle.Certifications, key, include);
+    }
+
     private async Task UpdateCattle()
     {
         if (cattle == null) return;
@@ -751,8 +1486,9 @@
 
     private void ShowUploadModal()
     {
-        selectedFile = null;
+        selectedFiles.Clear();
         uploadError = null;
+        uploadStatus = null;
         showUploadModal = true;
     }
 
@@ -761,52 +1497,91 @@
         showUploadModal = false;
     }
 
-    // Capture the file from the InputFile component
+    // Capture multiple files from the InputFile component
     private void HandleFileSelection(InputFileChangeEventArgs e)
     {
         uploadError = null;
-        selectedFile = e.File;
-        
-        // Basic validation
-        if (selectedFile.Size > MaxFileSize)
-        {
-            uploadError = "El archivo es demasiado grande (Máx 5MB).";
-            selectedFile = null;
-        }
-    }
-
-    // Process and Upload
-    private async Task UploadSelectedImage()
-    {
-        if (selectedFile == null || cattle == null) return;
-
-        isUploading = true;
-        uploadError = null;
+        uploadStatus = null;
 
         try
         {
-            // Call the service with the file directly (no Base64 conversion needed here)
-            var success = await CattleService.UploadImageAsync(cattle.GlobalId, selectedFile, imageType);
-
-            if (success)
+            var files = e.GetMultipleFiles(MaxAllowedFiles);
+            foreach (var file in files)
             {
-                successMessage = "Imagen subida correctamente.";
-                HideUploadModal();
-                await LoadCattle(); // Refresh to see the new image count
-            }
-            else
-            {
-                uploadError = "Error al subir la imagen. Intente nuevamente.";
+                // Simple duplicate check by name/size
+                if (!selectedFiles.Any(f => f.Name == file.Name && f.Size == file.Size))
+                {
+                    if (file.Size > MaxFileSize)
+                    {
+                        uploadError = $"El archivo {file.Name} excede el límite de 5MB y no fue agregado.";
+                    }
+                    else
+                    {
+                        selectedFiles.Add(file);
+                    }
+                }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error uploading image: {ex.Message}");
-            uploadError = "Ocurrió un error inesperado al procesar la imagen.";
+            uploadError = "Demasiados archivos seleccionados o error al leer.";
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    private void RemoveFile(IBrowserFile file)
+    {
+        selectedFiles.Remove(file);
+    }
+
+    // Loop process and Upload
+    private async Task UploadSelectedImages()
+    {
+        if (!selectedFiles.Any() || cattle == null) return;
+
+        isUploading = true;
+        uploadError = null;
+        uploadStatus = null;
+        int successCount = 0;
+        int total = selectedFiles.Count;
+
+        try
+        {
+            for (int i = 0; i < total; i++)
+            {
+                var file = selectedFiles[i];
+                uploadStatus = $"Subiendo {i + 1} de {total}: {file.Name}...";
+                StateHasChanged(); // Force UI to update text
+
+                var success = await CattleService.UploadImageAsync(cattle.GlobalId, file, imageType);
+
+                if (success)
+                {
+                    successCount++;
+                }
+            }
+
+            if (successCount == total)
+            {
+                successMessage = $"{successCount} imágenes subidas correctamente.";
+                HideUploadModal();
+                await LoadCattle(); // Refresh to see the new images
+            }
+            else
+            {
+                uploadError = $"Se completaron {successCount} de {total} subidas. Algunas fallaron.";
+                if (successCount > 0) await LoadCattle();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error uploading images: {ex.Message}");
+            uploadError = "Ocurrió un error inesperado al procesar las imágenes.";
         }
         finally
         {
             isUploading = false;
+            uploadStatus = null;
         }
     }
 }

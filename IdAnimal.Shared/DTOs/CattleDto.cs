@@ -3,7 +3,7 @@ namespace IdAnimal.Shared.DTOs;
 public class CattleDto
 {
     public int Id { get; set; }
-    public Guid GlobalId { get; set; } = Guid.NewGuid();
+    public string? GlobalId { get; set; }
     public string Caravan { get; set; } = string.Empty;
     public string? Name { get; set; }
     public decimal? Weight { get; set; }
@@ -17,4 +17,14 @@ public class CattleDto
     public int VideoCount { get; set; }
     public string? MainImageUrl { get; set; }
     public Dictionary<string, string>? CustomData { get; set; }
+
+    // Campos extendidos para la vista de detalle (carta del animal)
+    public DateTime? BirthDate { get; set; }
+    public string? SanitaryHistory { get; set; }
+    public int? FeedPasturePct { get; set; }
+    public int? FeedFeedlotPct { get; set; }
+    public int? FeedOrganicPct { get; set; }
+    public int? WeightProgressPct { get; set; }
+    /// <summary>CSV de identificadores de certificación, ej. "organic,brc,welfare,senasa".</summary>
+    public string? Certifications { get; set; }
 }

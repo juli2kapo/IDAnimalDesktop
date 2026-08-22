@@ -1,6 +1,5 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
 
 namespace IdAnimal.Web.Services;
 
@@ -16,8 +15,6 @@ public class ApiClient
         _configuration = configuration;
         _authStateProvider = authStateProvider;
 
-        //var baseUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5001";
-        // var baseUrl = "https://localhost:5001";
         var baseUrl = "https://api.idanimal.tech";
         _httpClient.BaseAddress = new Uri(baseUrl);
     }
@@ -32,27 +29,26 @@ public class ApiClient
             return default;
         }
 
-        return await response.Content.ReadFromJsonAsync<T>();
+        return await response.Content.ReadFromJsonAsync<T>(ApiJson.Options);
     }
 
     public async Task<HttpResponseMessage> PostAsync<T>(string endpoint, T data)
     {
         await SetAuthHeaderAsync();
-        return await _httpClient.PostAsJsonAsync(endpoint, data);
+        return await _httpClient.PostAsJsonAsync(endpoint, data, ApiJson.Options);
     }
 
     public async Task<HttpResponseMessage> PostContentAsync(string endpoint, HttpContent content)
     {
         await SetAuthHeaderAsync();
-        // We use PostAsync here directly so the 'content' can define its own 
-        // Content-Type (e.g., multipart/form-data)
+        // PostAsync directo: 'content' define su propio Content-Type (e.g., multipart/form-data)
         return await _httpClient.PostAsync(endpoint, content);
     }
 
     public async Task<HttpResponseMessage> PutAsync<T>(string endpoint, T data)
     {
         await SetAuthHeaderAsync();
-        return await _httpClient.PutAsJsonAsync(endpoint, data);
+        return await _httpClient.PutAsJsonAsync(endpoint, data, ApiJson.Options);
     }
 
     public async Task<HttpResponseMessage> DeleteAsync(string endpoint)

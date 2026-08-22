@@ -1,0 +1,370 @@
+@page "/a/{Token}"
+@layout IdAnimal.Web.Components.Layout.EmptyLayout
+@using IdAnimal.Web.Services
+@inject PublicAnimalService PublicAnimals
+
+<PageTitle>@(animal?.Name ?? animal?.Caravan ?? "Animal") — IdAnimal</PageTitle>
+
+<div class="pub-wrap">
+    @if (isLoading)
+    {
+        <div class="pub-state">
+            <div class="spinner-border" role="status"></div>
+        </div>
+    }
+    else if (animal == null)
+    {
+        <div class="pub-state">
+            <div class="pub-404">
+                <div class="pub-404-mark">?</div>
+                <h1>Animal no encontrado</h1>
+                <p>El código no corresponde a ningún animal registrado.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <article class="pub-card">
+
+            <header class="pub-hero">
+                @if (!string.IsNullOrEmpty(animal.ImageUrl))
+                {
+                    <img class="pub-photo" src="@ApiUrl.Resolve(animal.ImageUrl)" alt="Morro del animal" />
+                }
+                else
+                {
+                    <div class="pub-photo pub-photo-empty">
+                        <span>Sin foto de morro</span>
+                    </div>
+                }
+            </header>
+
+            <div class="pub-head">
+                <h1 class="pub-name">@(string.IsNullOrWhiteSpace(animal.Name) ? animal.Caravan : animal.Name)</h1>
+                <div class="pub-sub">
+                    <span class="pub-rp">@animal.Caravan</span>
+                    @if (!string.IsNullOrWhiteSpace(animal.EstablishmentName))
+                    {
+                        <span class="pub-dot">·</span>
+                        <span>@animal.EstablishmentName</span>
+                    }
+                </div>
+            </div>
+
+            <dl class="pub-grid">
+                @if (!string.IsNullOrWhiteSpace(animal.Eid))
+                {
+                    <div class="pub-item pub-item-wide">
+                        <dt>Caravana electrónica</dt>
+                        <dd class="pub-mono">@animal.Eid</dd>
+                    </div>
+                }
+                @if (Show("Categoria") is string cat)
+                {
+                    <div class="pub-item">
+                        <dt>Categoría</dt>
+                        <dd>@cat @Show("Subcategoria")</dd>
+                    </div>
+                }
+                @if (animal.Age is int edad)
+                {
+                    <div class="pub-item">
+                        <dt>Edad</dt>
+                        <dd>@edad meses</dd>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(animal.Gender))
+                {
+                    <div class="pub-item">
+                        <dt>Sexo</dt>
+                        <dd>@animal.Gender</dd>
+                    </div>
+                }
+                @if (Show("Lote remate") is string lote)
+                {
+                    <div class="pub-item">
+                        <dt>Lote</dt>
+                        <dd>@lote</dd>
+                    </div>
+                }
+            </dl>
+
+            @if (HasAny("Padre", "Madre", "Abuelo materno"))
+            {
+                <section class="pub-section">
+                    <h2>Pedigrí</h2>
+                    <dl class="pub-grid">
+                        @foreach (var k in new[] { "Padre", "Madre", "Abuelo materno" })
+                        {
+                            @if (Show(k) is string v)
+                            {
+                                <div class="pub-item">
+                                    <dt>@k</dt>
+                                    <dd>@v</dd>
+                                </div>
+                            }
+                        }
+                    </dl>
+                </section>
+            }
+
+            @if (HasAny("Peso nacimiento (PN)", "Peso destete (PD)", "Peso final (PF)"))
+            {
+                <section class="pub-section">
+                    <h2>Pesos</h2>
+                    <div class="pub-weights">
+                        @foreach (var (label, key) in new[] {
+                            ("Nacimiento", "Peso nacimiento (PN)"),
+                            ("Destete",    "Peso destete (PD)"),
+                            ("Final",      "Peso final (PF)") })
+                        {
+                            @if (Show(key) is string w)
+                            {
+                                <div class="pub-weight">
+                                    <span class="pub-weight-val">@w</span>
+                                    <span class="pub-weight-unit">kg</span>
+                                    <span class="pub-weight-label">@label</span>
+                                </div>
+                            }
+                        }
+                    </div>
+                </section>
+            }
+
+            <footer class="pub-foot">
+                <span class="pub-foot-brand">IdAnimal</span>
+                <span class="pub-foot-note">Ficha pública · @animal.ImageCount @(animal.ImageCount == 1 ? "captura" : "capturas") de morro</span>
+            </footer>
+
+        </article>
+    }
+</div>
+
+@code {
+    [Parameter] public string Token { get; set; } = string.Empty;
+
+    private PublicAnimalDto? animal;
+    private bool isLoading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        animal = await PublicAnimals.GetByGlobalIdAsync(Token);
+        isLoading = false;
+    }
+
+    /// <summary>Valor de un campo custom, o null si no está o viene vacío.</summary>
+    private string? Show(string key)
+        => animal != null && animal.CustomData.TryGetValue(key, out var v) && !string.IsNullOrWhiteSpace(v)
+            ? v : null;
+
+    private bool HasAny(params string[] keys) => keys.Any(k => Show(k) != null);
+}
+
+<style>
+    .pub-wrap {
+        min-height: 100vh;
+        background: var(--primary-bg);
+        padding: 20px 16px 40px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+    }
+
+    .pub-card {
+        width: 100%;
+        max-width: 520px;
+        background: var(--card-bg);
+        border: 2px solid var(--border-color);
+        border-radius: var(--border-radius-lg);
+        overflow: hidden;
+    }
+
+    /* --- foto --- */
+    .pub-photo {
+        display: block;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+        background: var(--surface-bg);
+    }
+
+    .pub-photo-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-hint);
+        font-size: .95rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    /* --- encabezado --- */
+    .pub-head {
+        padding: 18px 20px 14px;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .pub-name {
+        margin: 0;
+        font-size: 1.9rem;
+        font-weight: 900;
+        line-height: 1.1;
+        color: var(--text-primary);
+        letter-spacing: -.01em;
+    }
+
+    .pub-sub {
+        margin-top: 6px;
+        color: var(--text-secondary);
+        font-size: .95rem;
+    }
+
+    .pub-rp {
+        font-weight: 700;
+        color: var(--primary-green);
+    }
+
+    .pub-dot { margin: 0 6px; color: var(--text-hint); }
+
+    /* --- grilla de datos --- */
+    .pub-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1px;
+        margin: 0;
+        background: var(--border-color);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .pub-item {
+        background: var(--card-bg);
+        padding: 12px 20px 14px;
+        min-width: 0;
+    }
+
+    .pub-item-wide { grid-column: 1 / -1; }
+
+    .pub-item dt {
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: var(--text-hint);
+        margin-bottom: 3px;
+    }
+
+    .pub-item dd {
+        margin: 0;
+        font-size: 1.02rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        overflow-wrap: anywhere;
+    }
+
+    .pub-mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        letter-spacing: .02em;
+    }
+
+    /* --- secciones --- */
+    .pub-section { border-bottom: 1px solid var(--border-color); }
+
+    .pub-section > h2 {
+        margin: 0;
+        padding: 14px 20px 8px;
+        font-size: .78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: var(--text-secondary);
+    }
+
+    .pub-section .pub-grid { border-bottom: none; }
+
+    /* --- pesos --- */
+    .pub-weights {
+        display: flex;
+        gap: 1px;
+        background: var(--border-color);
+        border-top: 1px solid var(--border-color);
+    }
+
+    .pub-weight {
+        flex: 1;
+        background: var(--card-bg);
+        padding: 14px 8px 16px;
+        text-align: center;
+        min-width: 0;
+    }
+
+    .pub-weight-val {
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: var(--primary-green);
+    }
+
+    .pub-weight-unit {
+        font-size: .8rem;
+        font-weight: 700;
+        color: var(--text-hint);
+        margin-left: 2px;
+    }
+
+    .pub-weight-label {
+        display: block;
+        margin-top: 2px;
+        font-size: .72rem;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: var(--text-secondary);
+    }
+
+    /* --- pie --- */
+    .pub-foot {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+        background: var(--surface-bg);
+    }
+
+    .pub-foot-brand {
+        font-weight: 900;
+        letter-spacing: .04em;
+        color: var(--primary-green);
+    }
+
+    .pub-foot-note {
+        font-size: .78rem;
+        color: var(--text-secondary);
+        text-align: right;
+    }
+
+    /* --- estados --- */
+    .pub-state {
+        min-height: 70vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+    }
+
+    .pub-404 { text-align: center; padding: 20px; }
+
+    .pub-404-mark {
+        font-size: 3rem;
+        font-weight: 900;
+        color: var(--text-hint);
+        line-height: 1;
+        margin-bottom: 10px;
+    }
+
+    .pub-404 h1 { font-size: 1.4rem; font-weight: 800; color: var(--text-primary); }
+    .pub-404 p  { color: var(--text-secondary); margin: 0; }
+
+    @@media (max-width: 380px) {
+        .pub-grid { grid-template-columns: 1fr; }
+        .pub-name { font-size: 1.6rem; }
+    }
+</style>

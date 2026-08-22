@@ -9,18 +9,38 @@ main {
 }
 
 .sidebar {
-    background-color: var(--card-bg);
+    background-color: var(--surface-bg);
+    border-right: 1.5px solid var(--border-color);
     box-shadow: var(--shadow);
 }
 
 .top-row {
-    background-color: var(--primary-bg);
-    border-bottom: 2px solid var(--primary-orange);
+    background-color: var(--green-dark);
+    border-bottom: 3px solid var(--primary-green);
+    color: white;
     justify-content: flex-end;
-    height: 3.5rem;
+    height: 3.75rem;
     display: flex;
     align-items: center;
 }
+
+    .top-row span,
+    .top-row i {
+        color: white;
+    }
+
+    .top-row .btn-outline-danger {
+        color: white !important;
+        border-color: rgba(255, 255, 255, 0.65) !important;
+        background-color: transparent !important;
+        font-weight: 700;
+    }
+
+    .top-row .btn-outline-danger:hover {
+        background-color: var(--danger) !important;
+        border-color: var(--danger) !important;
+        color: white !important;
+    }
 
     .top-row ::deep a, .top-row ::deep .btn-link {
         white-space: nowrap;

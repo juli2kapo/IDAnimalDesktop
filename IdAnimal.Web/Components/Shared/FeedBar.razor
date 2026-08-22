@@ -1,0 +1,63 @@
+@* Barra de progreso simple usada en la card "Alimentación y Peso". *@
+
+<div class="feed-bar">
+    <div class="feed-bar-row">
+        <span class="feed-bar-label">@Label</span>
+        <span class="feed-bar-pct">@FormattedPct</span>
+    </div>
+    <div class="feed-bar-track">
+        <div class="feed-bar-fill" style="width: @FillWidth; background-color: @Color;"></div>
+    </div>
+</div>
+
+<style>
+    .feed-bar {
+        margin-bottom: 9px;
+    }
+
+    .feed-bar-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 3px;
+    }
+
+    .feed-bar-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .feed-bar-pct {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        letter-spacing: 0.4px;
+    }
+
+    .feed-bar-pct::before {
+        content: "• ";
+    }
+
+    .feed-bar-track {
+        height: 6px;
+        border-radius: 3px;
+        background: var(--surface-bg);
+        overflow: hidden;
+    }
+
+    .feed-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.4s ease;
+    }
+</style>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public int? Pct { get; set; }
+    [Parameter] public string Color { get; set; } = "#4A6741";
+
+    private string FormattedPct => Pct.HasValue ? $"{Pct.Value}%" : "—";
+    private string FillWidth => Pct.HasValue ? $"{Math.Clamp(Pct.Value, 0, 100)}%" : "0%";
+}

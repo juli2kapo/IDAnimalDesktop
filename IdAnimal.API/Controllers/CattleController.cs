@@ -256,18 +256,18 @@ public class CattleController : ControllerBase
             await file.CopyToAsync(memoryStream);
             byte[] imageBytes = memoryStream.ToArray();
 
-            // if (imageType.Equals("Snout", StringComparison.OrdinalIgnoreCase))
-            // {
-            //     var analysisResult = _snoutService.Analyze(imageBytes);
+            if (imageType.Equals("Snout", StringComparison.OrdinalIgnoreCase))
+            {
+                var analysisResult = _snoutService.Analyze(imageBytes);
 
-            //     if (analysisResult == null)
-            //     {
-            //         return BadRequest(new { message = "No snout detected in the uploaded image." });
-            //     }
+                if (analysisResult == null)
+                {
+                    return BadRequest(new { message = "No snout detected in the uploaded image." });
+                }
 
-            //     descriptorsJson = analysisResult.DescriptorsJson;
-            //     keypointsJson = analysisResult.KeypointsJson;
-            // }
+                descriptorsJson = analysisResult.DescriptorsJson;
+                keypointsJson = analysisResult.KeypointsJson;
+            }
 
             var fileName = $"{cattle.Caravan}_{imageType}_{DateTime.UtcNow.Ticks}{Path.GetExtension(file.FileName)}";
             var folder = $"cattle/{cattle.Caravan}/{imageType.ToLower()}";

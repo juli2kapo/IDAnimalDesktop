@@ -20,6 +20,8 @@ builder.Services.AddScoped<ReportGenerationService>();
 // Add HTTP clients
 builder.Services.AddHttpClient<AuthService>();
 builder.Services.AddHttpClient<ApiClient>();
+builder.Services.AddHttpClient<PublicAnimalService>();
+builder.Services.AddScoped<QrService>();
 
 // Add application services
 builder.Services.AddScoped<EstablishmentService>();

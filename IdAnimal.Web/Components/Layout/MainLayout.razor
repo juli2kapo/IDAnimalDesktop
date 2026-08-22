@@ -1,4 +1,4 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
 @using IdAnimal.Web.Services
 @inject AuthStateProvider AuthStateProvider
@@ -21,10 +21,10 @@
                     <div class="d-flex align-items-center gap-2">
                         @* Optional: You can add a user icon here if you use something like FontAwesome *@
                         <i class="fas fa-user-circle fs-4"></i>
-                        
+
                         <span class="fw-bold">Hola, @context.User.Identity?.Name</span>
                     </div>
-                    
+
                     <button class="btn btn-outline-danger btn-sm" @onclick="Logout">
                         Cerrar Sesión
                     </button>
@@ -45,6 +45,6 @@
     private async Task Logout()
     {
         await AuthStateProvider.LogoutAsync();
-        NavManager.NavigateTo("/login", forceLoad: true); 
+        NavManager.NavigateTo("/login", forceLoad: true);
     }
 }

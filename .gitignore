@@ -9,3 +9,6 @@ IdAnimal.Shared/obj/
 IdAnimal.Web/obj/
 IdAnimal.Web/bin/
 IdAnimal.Web/publish/
+
+# Build output at repo root (dotnet publish -o publish/web)
+/publish/
