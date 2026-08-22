@@ -12,6 +12,13 @@
                     <a href="login" class="btn btn-primary">Ir al Login</a>
                 </div>
             </NotAuthorized>
+            <Authorizing>
+                @* Vacío a propósito. Por defecto Blazor muestra "Authorizing..." mientras
+                   resuelve el estado de sesión, y ese estado tarda: AuthStateProvider lee
+                   el JWT de ProtectedLocalStorage, que recién está disponible cuando se
+                   conecta el circuito interactivo. En la ficha pública (/a/{id}), que no
+                   pide login, ese texto aparecía como un parpadeo al cargar. *@
+            </Authorizing>
         </AuthorizeRouteView>
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
