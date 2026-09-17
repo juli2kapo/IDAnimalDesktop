@@ -1,0 +1,140 @@
+@page "/cliente/animales/{GlobalId}"
+@using IdAnimal.Shared.DTOs.Clientes
+@using IdAnimal.Web.Services
+@inject ClientPortalService Portal
+
+<PageTitle>@(animal?.Caravan ?? "Animal") — IdAnimal</PageTitle>
+
+<div class="container-fluid p-4">
+    @if (cargando)
+    {
+        <p>Cargando…</p>
+    }
+    else if (animal is null)
+    {
+        <div class="alert alert-secondary">No se encontró el animal.</div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h1 class="mb-1">@animal.Caravan</h1>
+                <div class="text-secondary">
+                    @animal.Productor — @animal.Establecimiento
+                    @if (!string.IsNullOrWhiteSpace(animal.Provincia))
+                    {
+                        <span>(@animal.Provincia)</span>
+                    }
+                </div>
+            </div>
+            <button class="btn btn-primary" @onclick="() => mostrarVerificar = true">
+                Verificar identidad
+            </button>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="card p-3">
+                    <dl class="row mb-0">
+                        <dt class="col-5">Caravana electrónica</dt>
+                        <dd class="col-7 font-monospace">@(animal.Eid ?? "—")</dd>
+                        <dt class="col-5">ID de registro</dt>
+                        <dd class="col-7 font-monospace small">@animal.GlobalId</dd>
+                        <dt class="col-5">Sexo</dt>
+                        <dd class="col-7">@(animal.Gender ?? "—")</dd>
+                        <dt class="col-5">Edad</dt>
+                        <dd class="col-7">@(animal.Age?.ToString() ?? "—")</dd>
+                        <dt class="col-5">RENSPA</dt>
+                        <dd class="col-7">@(animal.Renspa ?? "—")</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="h5 mb-3">Verificaciones</h2>
+        @if (animal.Verificaciones is null || animal.Verificaciones.Count == 0)
+        {
+            <div class="alert alert-secondary">
+                Este animal todavía no fue verificado.
+            </div>
+        }
+        else
+        {
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Origen</th>
+                        <th>Resultado</th>
+                        <th class="text-end">Distancia</th>
+                        <th class="text-end">Umbral</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in animal.Verificaciones)
+                    {
+                        <tr>
+                            <td class="small">@v.CreatedAt</td>
+                            <td>
+                                <span class="badge bg-secondary">
+                                    @(v.Origen == "campo" ? "Campo" : "Portal")
+                                </span>
+                            </td>
+                            <td>@Etiqueta(v)</td>
+                            <td class="text-end font-monospace small">
+                                @(v.Distance?.ToString("F4") ?? "—")
+                            </td>
+                            <td class="text-end font-monospace small">
+                                @(v.Threshold?.ToString("F4") ?? "—")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+</div>
+
+@if (mostrarVerificar && animal is not null)
+{
+    <VerificarDialog GlobalId="@animal.GlobalId"
+                     Caravana="@animal.Caravan"
+                     OnCerrar="CerrarVerificar" />
+}
+
+@code {
+    [Parameter] public string GlobalId { get; set; } = string.Empty;
+
+    private AnimalClienteDto? animal;
+    private bool cargando = true;
+    private bool mostrarVerificar;
+
+    protected override async Task OnInitializedAsync() => await Cargar();
+
+    private async Task Cargar()
+    {
+        cargando = true;
+        animal = await Portal.GetAnimalAsync(GlobalId);
+        cargando = false;
+    }
+
+    private async Task CerrarVerificar()
+    {
+        mostrarVerificar = false;
+        // Recargar para que la verificación recién hecha aparezca en el historial.
+        await Cargar();
+    }
+
+    /// El resultado en palabras. Una verificación del campo no trae `outcome`
+    /// (esa tabla es anterior), así que se cae a `is_match`.
+    private static string Etiqueta(VerificacionDto v) => v.Outcome switch
+    {
+        "match" => "Coincide",
+        "no_match" => "No coincide",
+        "foto_no_apta" => "Foto no apta",
+        "sin_modelo" => "Sin modelo",
+        "sin_calibrar" => "Sin calibrar",
+        "error_tecnico" => "Error técnico",
+        _ => v.IsMatch == true ? "Coincide" : v.IsMatch == false ? "No coincide" : "—",
+    };
+}

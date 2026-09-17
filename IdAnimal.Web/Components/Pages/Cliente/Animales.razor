@@ -1,0 +1,107 @@
+@page "/cliente/animales"
+@using IdAnimal.Shared.DTOs.Clientes
+@using IdAnimal.Web.Services
+@using Microsoft.AspNetCore.WebUtilities
+@inject ClientPortalService Portal
+@inject NavigationManager Nav
+
+<PageTitle>Animales — IdAnimal</PageTitle>
+
+<div class="container-fluid p-4">
+    <h1 class="mb-3">Animales</h1>
+
+    <div class="d-flex gap-2 mb-3">
+        <input class="form-control" placeholder="Caravana o caravana electrónica"
+               @bind="q" @bind:event="oninput"
+               @onkeydown="@(e => { if (e.Key == "Enter") { pagina = 1; _ = Cargar(); } })" />
+        <button class="btn btn-primary" @onclick="() => { pagina = 1; return Cargar(); }">
+            Buscar
+        </button>
+    </div>
+
+    @if (cargando)
+    {
+        <p>Cargando…</p>
+    }
+    else if (datos is null || datos.Items.Count == 0)
+    {
+        <div class="alert alert-secondary">Sin resultados.</div>
+    }
+    else
+    {
+        <div class="text-secondary small mb-2">
+            @datos.Total animal@(datos.Total == 1 ? "" : "es")
+        </div>
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Caravana</th>
+                    <th>Electrónica</th>
+                    <th>Productor</th>
+                    <th>Establecimiento</th>
+                    <th>Provincia</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in datos.Items)
+                {
+                    <tr style="cursor:pointer" @onclick="() => Abrir(a.GlobalId)">
+                        <td class="fw-bold">@a.Caravan</td>
+                        <td class="font-monospace small">@a.Eid</td>
+                        <td>@a.Productor</td>
+                        <td>@a.Establecimiento</td>
+                        <td>@a.Provincia</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (datos.Total > datos.PageSize)
+        {
+            <div class="d-flex gap-2 align-items-center">
+                <button class="btn btn-sm btn-outline-secondary"
+                        disabled="@(pagina <= 1)"
+                        @onclick="() => { pagina--; return Cargar(); }">Anterior</button>
+                <span class="small">Página @pagina de @TotalPaginas</span>
+                <button class="btn btn-sm btn-outline-secondary"
+                        disabled="@(pagina >= TotalPaginas)"
+                        @onclick="() => { pagina++; return Cargar(); }">Siguiente</button>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private AnimalesPageDto? datos;
+    private bool cargando = true;
+    private string q = string.Empty;
+    private int pagina = 1;
+    private int? productorId;
+
+    private int TotalPaginas => datos is null || datos.PageSize == 0
+        ? 1
+        : (int)Math.Ceiling((double)datos.Total / datos.PageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        // La página se abre con filtros en la URL desde el dashboard y desde
+        // la lista de productores.
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        var qs = QueryHelpers.ParseQuery(uri.Query);
+        if (qs.TryGetValue("q", out var vq)) q = vq.ToString();
+        if (qs.TryGetValue("productor_id", out var vp) && int.TryParse(vp, out var pid))
+            productorId = pid;
+        await Cargar();
+    }
+
+    private async Task Cargar()
+    {
+        cargando = true;
+        datos = await Portal.BuscarAnimalesAsync(
+            q: string.IsNullOrWhiteSpace(q) ? null : q,
+            productorId: productorId, page: pagina);
+        cargando = false;
+    }
+
+    private void Abrir(string globalId) => Nav.NavigateTo($"/cliente/animales/{globalId}");
+}
