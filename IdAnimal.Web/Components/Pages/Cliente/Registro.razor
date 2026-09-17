@@ -1,0 +1,89 @@
+@page "/cliente/registro/{Token}"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using IdAnimal.Shared.DTOs.Clientes
+@using IdAnimal.Web.Services
+@inject ClientPortalService Portal
+@inject AuthStateProvider AuthStateProvider
+@inject NavigationManager Nav
+
+<PageTitle>Crear cuenta — IdAnimal</PageTitle>
+
+<div class="container" style="max-width:480px; padding:3rem 1rem">
+    @if (cargando)
+    {
+        <p>Verificando la invitación…</p>
+    }
+    else if (invitacion is null)
+    {
+        <div class="alert alert-secondary">
+            <div class="fw-bold">Esta invitación no es válida</div>
+            <div class="mt-1">
+                Puede haber vencido o haberse usado. Pedile a quien te invitó
+                que te mande una nueva.
+            </div>
+        </div>
+    }
+    else
+    {
+        <h1 class="h4 mb-1">Te invitaron a @invitacion.ClienteNombre</h1>
+        <p class="text-secondary">@invitacion.Email</p>
+
+        <div class="mb-3">
+            <label class="form-label">Tu nombre</label>
+            <input class="form-control" @bind="nombre" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Contraseña</label>
+            <input type="password" class="form-control" @bind="pass1" />
+            <div class="form-text">Al menos 6 caracteres.</div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Repetir contraseña</label>
+            <input type="password" class="form-control" @bind="pass2" />
+        </div>
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-warning">@error</div>
+        }
+
+        <button class="btn btn-primary w-100" @onclick="Crear" disabled="@enviando">
+            @(enviando ? "Creando…" : "Crear mi cuenta")
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public string Token { get; set; } = string.Empty;
+
+    private InvitacionPublicaDto? invitacion;
+    private bool cargando = true, enviando;
+    private string nombre = "", pass1 = "", pass2 = "", error = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        invitacion = await Portal.GetInvitacionAsync(Token);
+        cargando = false;
+    }
+
+    private async Task Crear()
+    {
+        error = "";
+        if (string.IsNullOrWhiteSpace(nombre)) { error = "Poné tu nombre."; return; }
+        if (pass1.Length < 6) { error = "La contraseña necesita al menos 6 caracteres."; return; }
+        if (pass1 != pass2) { error = "Las contraseñas no coinciden."; return; }
+
+        enviando = true;
+        var res = await Portal.CanjearInvitacionAsync(Token, nombre, pass1);
+        enviando = false;
+
+        if (res is null)
+        {
+            error = "No se pudo crear la cuenta. Puede que la invitación ya se haya usado.";
+            return;
+        }
+
+        await AuthStateProvider.LoginAsync(res.Token);
+        Nav.NavigateTo("/cliente");
+    }
+}

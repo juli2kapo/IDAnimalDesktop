@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using IdAnimal.Shared.DTOs.Clientes;
 
 namespace IdAnimal.Web.Services;
@@ -59,5 +60,34 @@ public class ClientPortalService
             $"/api/v1/clientes/animales/{globalId}/verificar", content);
         if (!r.IsSuccessStatusCode) return null;
         return await r.Content.ReadFromJsonAsync<VerificacionResultDto>(ApiJson.Options);
+    }
+
+    /// Consulta pública de una invitación. Sin JWT a propósito: el invitado
+    /// todavía no tiene cuenta. Ver PublicAnimalService, mismo motivo.
+    public async Task<InvitacionPublicaDto?> GetInvitacionAsync(string token)
+    {
+        try
+        {
+            using var http = new HttpClient { BaseAddress = new Uri(ApiUrl.BaseUrl) };
+            var r = await http.GetAsync($"/api/v1/clientes/invitaciones/{token}");
+            if (!r.IsSuccessStatusCode) return null;
+            return await r.Content.ReadFromJsonAsync<InvitacionPublicaDto>(ApiJson.Options);
+        }
+        catch { return null; }
+    }
+
+    public async Task<InvitacionCanjeDto?> CanjearInvitacionAsync(
+        string token, string fullName, string password)
+    {
+        try
+        {
+            using var http = new HttpClient { BaseAddress = new Uri(ApiUrl.BaseUrl) };
+            var r = await http.PostAsJsonAsync(
+                $"/api/v1/clientes/invitaciones/{token}",
+                new { full_name = fullName, password }, ApiJson.Options);
+            if (!r.IsSuccessStatusCode) return null;
+            return await r.Content.ReadFromJsonAsync<InvitacionCanjeDto>(ApiJson.Options);
+        }
+        catch { return null; }
     }
 }
