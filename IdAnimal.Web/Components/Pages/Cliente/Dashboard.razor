@@ -69,6 +69,6 @@
     private void Buscar()
     {
         if (string.IsNullOrWhiteSpace(busqueda)) return;
-        Nav.NavigateTo($"/cliente/animales?q={Uri.EscapeDataString(busqueda)}");
+        Nav.NavigateTo($"/animales?q={Uri.EscapeDataString(busqueda)}");
     }
 }
