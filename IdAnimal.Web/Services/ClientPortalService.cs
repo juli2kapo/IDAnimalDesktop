@@ -40,4 +40,24 @@ public class ClientPortalService
     public async Task<AnimalClienteDto?> GetAnimalAsync(string globalId)
         => await _apiClient.GetAsync<AnimalClienteDto>(
             $"/api/v1/clientes/animales/{globalId}");
+
+    /// Sube una foto del morro y devuelve uno de seis resultados.
+    ///
+    /// Va por PostContentAsync porque es multipart: ApiJson.Options no aplica
+    /// a form data, así que el nombre del campo ("file") va a mano, igual que
+    /// en CattleService.UploadImageAsync.
+    public async Task<VerificacionResultDto?> VerificarAsync(
+        string globalId, Stream foto, string fileName)
+    {
+        var content = new MultipartFormDataContent();
+        var sc = new StreamContent(foto);
+        sc.Headers.ContentType =
+            new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
+        content.Add(sc, "file", fileName);
+
+        var r = await _apiClient.PostContentAsync(
+            $"/api/v1/clientes/animales/{globalId}/verificar", content);
+        if (!r.IsSuccessStatusCode) return null;
+        return await r.Content.ReadFromJsonAsync<VerificacionResultDto>(ApiJson.Options);
+    }
 }

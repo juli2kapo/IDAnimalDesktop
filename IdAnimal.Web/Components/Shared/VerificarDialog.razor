@@ -1,0 +1,121 @@
+@using IdAnimal.Shared.DTOs.Clientes
+@using IdAnimal.Web.Services
+@inject ClientPortalService Portal
+
+<div class="modal d-block" style="background:rgba(0,0,0,.5)" @onclick="Cerrar">
+    <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Verificar @Caravana</h5>
+                <button type="button" class="btn-close" @onclick="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                @if (resultado is null)
+                {
+                    <p class="text-secondary">
+                        Subí una foto del morro del animal. Tiene que verse el hocico
+                        completo, centrado y enfocado.
+                    </p>
+                    <InputFile OnChange="Subir" accept="image/*" class="form-control" />
+                    @if (subiendo)
+                    {
+                        <p class="mt-3 mb-0">Analizando la foto…</p>
+                    }
+                }
+                else
+                {
+                    <div class="alert @ClaseAlerta(resultado.Outcome)">
+                        <div class="fw-bold fs-5">@Titulo(resultado.Outcome)</div>
+                        @if (!string.IsNullOrWhiteSpace(resultado.Reason))
+                        {
+                            <div class="mt-1">@resultado.Reason</div>
+                        }
+                    </div>
+
+                    @* Los números sólo cuando hubo comparación real. Mostrar una
+                       distancia sin umbral confiable es dar una precisión falsa. *@
+                    @if (resultado.Outcome is "match" or "no_match")
+                    {
+                        <dl class="row small mb-0">
+                            <dt class="col-5">Distancia</dt>
+                            <dd class="col-7 font-monospace">@resultado.Distance?.ToString("F4")</dd>
+                            <dt class="col-5">Umbral del modelo</dt>
+                            <dd class="col-7 font-monospace">@resultado.Threshold?.ToString("F4")</dd>
+                            <dt class="col-5">Fecha</dt>
+                            <dd class="col-7">@resultado.VerificadoEn</dd>
+                        </dl>
+                    }
+                }
+            </div>
+
+            <div class="modal-footer">
+                @if (resultado is not null && PermiteReintento(resultado.Outcome))
+                {
+                    <button class="btn btn-outline-primary" @onclick="Reintentar">
+                        Probar con otra foto
+                    </button>
+                }
+                <button class="btn btn-secondary" @onclick="Cerrar">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string GlobalId { get; set; } = string.Empty;
+    [Parameter] public string Caravana { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnCerrar { get; set; }
+
+    private VerificacionResultDto? resultado;
+    private bool subiendo;
+
+    private async Task Subir(InputFileChangeEventArgs e)
+    {
+        subiendo = true;
+        var f = e.File;
+        // 12 MB: una foto de celular entra de sobra.
+        using var s = f.OpenReadStream(maxAllowedSize: 12 * 1024 * 1024);
+        using var ms = new MemoryStream();
+        await s.CopyToAsync(ms);
+        ms.Position = 0;
+        resultado = await Portal.VerificarAsync(GlobalId, ms, f.Name);
+        subiendo = false;
+    }
+
+    private void Reintentar() => resultado = null;
+
+    private async Task Cerrar() => await OnCerrar.InvokeAsync();
+
+    /// El color es la decisión de diseño que más importa acá.
+    ///
+    /// Rojo SÓLO para `no_match`, que es la única respuesta que acusa a
+    /// alguien. Una foto mala o un error nuestro van en amarillo/gris: el
+    /// productor del otro lado no hizo nada y no se lo puede pintar de fraude.
+    private static string ClaseAlerta(string outcome) => outcome switch
+    {
+        "match" => "alert-success",
+        "no_match" => "alert-danger",
+        "foto_no_apta" => "alert-warning",
+        "sin_modelo" => "alert-secondary",
+        "sin_calibrar" => "alert-secondary",
+        "error_tecnico" => "alert-secondary",
+        _ => "alert-secondary",
+    };
+
+    private static string Titulo(string outcome) => outcome switch
+    {
+        "match" => "Coincide",
+        "no_match" => "No coincide",
+        "foto_no_apta" => "La foto no sirve",
+        "sin_modelo" => "El establecimiento no tiene modelo entrenado",
+        "sin_calibrar" => "No se puede verificar con confianza",
+        "error_tecnico" => "No pudimos analizar la foto",
+        _ => "Resultado desconocido",
+    };
+
+    /// Reintentar tiene sentido cuando el problema es la foto o un error
+    /// nuestro. No lo tiene cuando falta el modelo: otra foto no lo arregla.
+    private static bool PermiteReintento(string outcome)
+        => outcome is "foto_no_apta" or "error_tecnico";
+}
