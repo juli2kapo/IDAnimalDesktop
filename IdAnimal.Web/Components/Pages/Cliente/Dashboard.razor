@@ -1,0 +1,73 @@
+@page "/cliente"
+@using IdAnimal.Shared.DTOs.Clientes
+@using IdAnimal.Web.Services
+@inject ClientPortalService Portal
+@inject NavigationManager Nav
+
+<PageTitle>Portal — IdAnimal</PageTitle>
+
+<div class="container-fluid p-4">
+    <h1 class="mb-4">@(me?.Cliente?.Nombre ?? "Portal")</h1>
+
+    @if (cargando)
+    {
+        <p>Cargando…</p>
+    }
+    else
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card p-3">
+                    <div class="text-secondary small">Animales asegurados</div>
+                    <div class="fs-2 fw-bold">@(datos?.Animales ?? 0)</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-3">
+                    <div class="text-secondary small">Clientes</div>
+                    <div class="fs-2 fw-bold">@(datos?.Productores ?? 0)</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-3">
+                    <div class="text-secondary small">Verificaciones (30 días)</div>
+                    <div class="fs-2 fw-bold">@(datos?.Verificaciones30d ?? 0)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-3">
+            <label class="form-label fw-bold">Buscar un animal</label>
+            <div class="d-flex gap-2">
+                <input class="form-control" placeholder="Caravana o caravana electrónica"
+                       @bind="busqueda" @bind:event="oninput"
+                       @onkeydown="@(e => { if (e.Key == "Enter") Buscar(); })" />
+                <button class="btn btn-primary" @onclick="Buscar">Buscar</button>
+            </div>
+            <div class="form-text">
+                Llega un siniestro con un número de caravana: buscalo acá para ver
+                de qué cliente es.
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private ClienteMeDto? me;
+    private DashboardDto? datos;
+    private bool cargando = true;
+    private string busqueda = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        me = await Portal.GetMeAsync();
+        datos = await Portal.GetDashboardAsync();
+        cargando = false;
+    }
+
+    private void Buscar()
+    {
+        if (string.IsNullOrWhiteSpace(busqueda)) return;
+        Nav.NavigateTo($"/cliente/animales?q={Uri.EscapeDataString(busqueda)}");
+    }
+}

@@ -13,7 +13,15 @@
     <AuthorizeView>
         <Authorized>
             <div class="sidebar">
-                <NavMenu />
+                @if (context.User.FindFirst("typ")?.Value == "client")
+                {
+                    <ClientNavMenu />
+                }
+                else
+                {
+                    @* `typ` ausente = productor: los tokens viejos siguen valiendo. *@
+                    <NavMenu />
+                }
             </div>
         </Authorized>
         <Authorizing><text></text></Authorizing>

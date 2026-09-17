@@ -27,6 +27,7 @@ builder.Services.AddScoped<QrService>();
 builder.Services.AddScoped<EstablishmentService>();
 builder.Services.AddScoped<CattleService>();
 builder.Services.AddScoped<CustomDataService>();
+builder.Services.AddScoped<ClientPortalService>();
 
 var app = builder.Build();
 
