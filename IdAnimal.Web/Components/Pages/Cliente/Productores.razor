@@ -1,0 +1,67 @@
+@page "/cliente/productores"
+@using IdAnimal.Shared.DTOs.Clientes
+@using IdAnimal.Web.Services
+@inject ClientPortalService Portal
+@inject NavigationManager Nav
+
+<PageTitle>Clientes — IdAnimal</PageTitle>
+
+<div class="container-fluid p-4">
+    <h1 class="mb-4">Clientes</h1>
+
+    @if (cargando)
+    {
+        <p>Cargando…</p>
+    }
+    else if (productores is null || productores.Count == 0)
+    {
+        <div class="alert alert-secondary">
+            Todavía no hay productores vinculados a tu cuenta.
+        </div>
+    }
+    else
+    {
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Productor</th>
+                    <th>Email</th>
+                    <th class="text-end">Establecimientos</th>
+                    <th class="text-end">Animales</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in productores)
+                {
+                    <tr>
+                        <td class="fw-bold">@p.FullName</td>
+                        <td class="text-secondary">@p.Email</td>
+                        <td class="text-end">@p.Establecimientos</td>
+                        <td class="text-end">@p.Animales</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary"
+                                    @onclick="() => VerAnimales(p.Id)">
+                                Ver animales
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    private List<ProductorDto>? productores;
+    private bool cargando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        productores = await Portal.GetProductoresAsync();
+        cargando = false;
+    }
+
+    private void VerAnimales(int productorId)
+        => Nav.NavigateTo($"/cliente/animales?productor_id={productorId}");
+}
