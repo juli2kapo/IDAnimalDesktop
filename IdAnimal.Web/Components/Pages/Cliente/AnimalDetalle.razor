@@ -5,95 +5,191 @@
 
 <PageTitle>@(animal?.Caravan ?? "Animal") — IdAnimal</PageTitle>
 
-<div class="container-fluid p-4">
+<div class="page-container">
     @if (cargando)
     {
-        <p>Cargando…</p>
+        <div class="text-center mt-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
     }
     else if (animal is null)
     {
-        <div class="alert alert-secondary">No se encontró el animal.</div>
+        <div class="empty-state">
+            <i class="bi bi-question-circle empty-state-icon"></i>
+            <h3>No se encontró el animal</h3>
+            <p>Puede que no esté vinculado a tu cuenta o que el enlace sea incorrecto.</p>
+        </div>
     }
     else
     {
-        <div class="d-flex justify-content-between align-items-start mb-4">
-            <div>
-                <h1 class="mb-1">@animal.Caravan</h1>
-                <div class="text-secondary">
-                    @animal.Productor — @animal.Establecimiento
+        <div class="page-header">
+            <div class="title-block">
+                <h1>@animal.Caravan</h1>
+                <div class="subtitle">
+                    <i class="bi bi-person-fill"></i>
+                    <span>@(string.IsNullOrWhiteSpace(animal.Productor) ? "—" : animal.Productor)</span>
+                    <span class="sep">·</span>
+                    <i class="bi bi-building"></i>
+                    <span>@(string.IsNullOrWhiteSpace(animal.Establecimiento) ? "—" : animal.Establecimiento)</span>
                     @if (!string.IsNullOrWhiteSpace(animal.Provincia))
                     {
-                        <span>(@animal.Provincia)</span>
+                        <span class="prov-chip">@animal.Provincia</span>
                     }
                 </div>
             </div>
             <button class="btn btn-primary" @onclick="() => mostrarVerificar = true">
-                Verificar identidad
+                <i class="bi bi-shield-check"></i> Verificar identidad
             </button>
         </div>
 
-        <div class="row g-3 mb-4">
-            <div class="col-md-6">
-                <div class="card p-3">
-                    <dl class="row mb-0">
-                        <dt class="col-5">Caravana electrónica</dt>
-                        <dd class="col-7 font-monospace">@(animal.Eid ?? "—")</dd>
-                        <dt class="col-5">ID de registro</dt>
-                        <dd class="col-7 font-monospace small">@animal.GlobalId</dd>
-                        <dt class="col-5">Sexo</dt>
-                        <dd class="col-7">@(animal.Gender ?? "—")</dd>
-                        <dt class="col-5">Edad</dt>
-                        <dd class="col-7">@(animal.Age?.ToString() ?? "—")</dd>
-                        <dt class="col-5">RENSPA</dt>
-                        <dd class="col-7">@(animal.Renspa ?? "—")</dd>
-                    </dl>
+        <div class="detalle-layout">
+            <!-- Foto principal -->
+            <div class="ca-photo">
+                @if (FotoPrincipal is not null)
+                {
+                    <img src="@FotoPrincipal" alt="@animal.Caravan"
+                         @onclick="() => AbrirImagen(FotoPrincipal!)" />
+                }
+                else
+                {
+                    @* Sin fotos el bloque conserva su altura: la ficha no se
+                       descuadra ni muestra un icono de imagen rota. *@
+                    <div class="ca-photo-placeholder">
+                        <i class="bi bi-image"></i>
+                        <span>Sin fotos</span>
+                    </div>
+                }
+            </div>
+
+            <!-- Datos del animal -->
+            <div class="ca-card">
+                <div class="ca-card-header">
+                    <span class="ca-icon ca-icon-green"><i class="bi bi-card-list"></i></span>
+                    <h3>Datos del animal</h3>
                 </div>
+                <dl class="data-list">
+                    <dt>Caravana electrónica</dt>
+                    <dd class="mono">@(string.IsNullOrWhiteSpace(animal.Eid) ? "—" : animal.Eid)</dd>
+
+                    <dt>ID de registro</dt>
+                    <dd class="mono small">@animal.GlobalId</dd>
+
+                    <dt>Sexo</dt>
+                    <dd>@(string.IsNullOrWhiteSpace(animal.Gender) ? "—" : animal.Gender)</dd>
+
+                    <dt>Edad</dt>
+                    <dd>@(animal.Age?.ToString() ?? "—")</dd>
+
+                    <dt>RENSPA</dt>
+                    <dd>@(string.IsNullOrWhiteSpace(animal.Renspa) ? "—" : animal.Renspa)</dd>
+                </dl>
             </div>
         </div>
 
-        <h2 class="h5 mb-3">Verificaciones</h2>
-        @if (animal.Verificaciones is null || animal.Verificaciones.Count == 0)
+        @* Galería: sólo si hay algo más allá de la foto principal. *@
+        @if (Galeria.Count > 1)
         {
-            <div class="alert alert-secondary">
-                Este animal todavía no fue verificado.
+            <div class="ca-card">
+                <div class="ca-card-header">
+                    <span class="ca-icon ca-icon-orange"><i class="bi bi-images"></i></span>
+                    <h3>Imágenes</h3>
+                    <span class="header-count">@Galeria.Count</span>
+                </div>
+                <div class="ca-thumb-grid">
+                    @foreach (var url in Galeria.Skip(1))
+                    {
+                        <div class="ca-thumb" @onclick="() => AbrirImagen(url)">
+                            <img src="@url" alt="Imagen del animal" />
+                        </div>
+                    }
+                </div>
             </div>
         }
-        else
-        {
-            <table class="table align-middle">
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Origen</th>
-                        <th>Resultado</th>
-                        <th class="text-end">Distancia</th>
-                        <th class="text-end">Umbral</th>
-                    </tr>
-                </thead>
-                <tbody>
+
+        <!-- Historial de verificaciones -->
+        <div class="ca-card">
+            <div class="ca-card-header">
+                <span class="ca-icon ca-icon-green"><i class="bi bi-shield-check"></i></span>
+                <h3>Verificaciones</h3>
+                @if (animal.Verificaciones is not null && animal.Verificaciones.Count > 0)
+                {
+                    <span class="header-count">@animal.Verificaciones.Count</span>
+                }
+            </div>
+
+            @if (animal.Verificaciones is null || animal.Verificaciones.Count == 0)
+            {
+                <div class="inline-empty">
+                    <i class="bi bi-clock-history"></i>
+                    <span>Este animal todavía no fue verificado.</span>
+                </div>
+            }
+            else
+            {
+                <ol class="timeline">
                     @foreach (var v in animal.Verificaciones)
                     {
-                        <tr>
-                            <td class="small">@v.CreatedAt</td>
-                            <td>
-                                <span class="badge bg-secondary">
-                                    @(v.Origen == "campo" ? "Campo" : "Portal")
-                                </span>
-                            </td>
-                            <td>@Etiqueta(v)</td>
-                            <td class="text-end font-monospace small">
-                                @(v.Distance?.ToString("F4") ?? "—")
-                            </td>
-                            <td class="text-end font-monospace small">
-                                @(v.Threshold?.ToString("F4") ?? "—")
-                            </td>
-                        </tr>
+                        <li class="tl-item">
+                            @* El punto del hilo toma el color del resultado. Igual
+                               que en el diálogo de verificación, sólo `no_match`
+                               va en rojo: una foto no apta o un error técnico no
+                               son una acusación contra el productor. *@
+                            <span class="tl-dot @ClaseResultado(v)">
+                                <i class="bi @IconoResultado(v)"></i>
+                            </span>
+                            <div class="tl-body">
+                                <div class="tl-top">
+                                    <span class="tl-outcome @ClaseTexto(v)">@Etiqueta(v)</span>
+                                    <span class="badge @(v.Origen == "campo" ? "bg-secondary" : "bg-primary")">
+                                        @(v.Origen == "campo" ? "Campo" : "Portal")
+                                    </span>
+                                    <span class="tl-date">@v.CreatedAt</span>
+                                </div>
+                                @if (v.Distance is not null || v.Threshold is not null)
+                                {
+                                    <div class="tl-metrics">
+                                        <span>
+                                            Distancia
+                                            <strong class="mono">@(v.Distance?.ToString("F4") ?? "—")</strong>
+                                        </span>
+                                        <span>
+                                            Umbral
+                                            <strong class="mono">@(v.Threshold?.ToString("F4") ?? "—")</strong>
+                                        </span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(v.Reason))
+                                {
+                                    <div class="tl-reason">@v.Reason</div>
+                                }
+                            </div>
+                        </li>
                     }
-                </tbody>
-            </table>
-        }
+                </ol>
+            }
+        </div>
     }
 </div>
+
+@* Visor de imagen a pantalla completa, igual que en la ficha del productor. *@
+@if (imagenAmpliada is not null)
+{
+    <div class="modal fade show" style="display: block; background-color: rgba(0,0,0,0.8);"
+         tabindex="-1" @onclick="CerrarImagen">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-transparent border-0">
+                <div class="modal-body text-center position-relative">
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3"
+                            @onclick="CerrarImagen"></button>
+                    <img src="@imagenAmpliada" class="img-fluid rounded shadow-lg"
+                         style="max-height: 85vh;" @onclick:stopPropagation />
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @if (mostrarVerificar && animal is not null)
 {
@@ -108,6 +204,20 @@
     private AnimalClienteDto? animal;
     private bool cargando = true;
     private bool mostrarVerificar;
+    private string? imagenAmpliada;
+
+    /// URLs absolutas de las imágenes de la ficha. El backend puede devolver
+    /// rutas relativas ("/static/images/..."), que el navegador cargaría desde
+    /// el host del portal y no del API: por eso pasan por ApiUrl.Resolve.
+    private List<string> Galeria =>
+        animal?.Imagenes?
+            .Select(i => ApiUrl.Resolve(i.ImageUrl))
+            .Where(u => u is not null)
+            .Select(u => u!)
+            .ToList()
+        ?? new List<string>();
+
+    private string? FotoPrincipal => Galeria.FirstOrDefault();
 
     protected override async Task OnInitializedAsync() => await Cargar();
 
@@ -117,6 +227,10 @@
         animal = await Portal.GetAnimalAsync(GlobalId);
         cargando = false;
     }
+
+    private void AbrirImagen(string url) => imagenAmpliada = url;
+
+    private void CerrarImagen() => imagenAmpliada = null;
 
     private async Task CerrarVerificar()
     {
@@ -137,4 +251,419 @@
         "error_tecnico" => "Error técnico",
         _ => v.IsMatch == true ? "Coincide" : v.IsMatch == false ? "No coincide" : "—",
     };
+
+    /// Color del punto. ROJO SÓLO para `no_match`: es la única respuesta que
+    /// acusa al productor. Una foto no apta o un error técnico son problemas
+    /// nuestros y van en neutro/ámbar.
+    private static string ClaseResultado(VerificacionDto v) => Resultado(v) switch
+    {
+        "match" => "tl-dot-ok",
+        "no_match" => "tl-dot-bad",
+        "foto_no_apta" => "tl-dot-warn",
+        _ => "tl-dot-neutral",
+    };
+
+    private static string ClaseTexto(VerificacionDto v) => Resultado(v) switch
+    {
+        "match" => "txt-ok",
+        "no_match" => "txt-bad",
+        _ => "txt-neutral",
+    };
+
+    private static string IconoResultado(VerificacionDto v) => Resultado(v) switch
+    {
+        "match" => "bi-check-lg",
+        "no_match" => "bi-x-lg",
+        "foto_no_apta" => "bi-camera",
+        _ => "bi-dash-lg",
+    };
+
+    /// Normaliza el resultado: las filas viejas del campo no tienen `outcome`.
+    private static string Resultado(VerificacionDto v)
+    {
+        if (!string.IsNullOrWhiteSpace(v.Outcome)) return v.Outcome!;
+        return v.IsMatch == true ? "match" : v.IsMatch == false ? "no_match" : "—";
+    }
 }
+
+<style>
+    .page-container {
+        padding: 25px;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 18px;
+        flex-wrap: wrap;
+        margin-bottom: 22px;
+    }
+
+    .page-header h1 {
+        color: var(--text-primary);
+        font-size: 32px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin: 0 0 6px;
+    }
+
+    .subtitle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        color: var(--text-secondary);
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .subtitle i {
+        color: var(--primary-green);
+    }
+
+    .subtitle .sep {
+        color: var(--border-color);
+    }
+
+    .prov-chip {
+        background: var(--surface-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        color: var(--text-secondary);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        margin-left: 4px;
+        padding: 3px 9px;
+        text-transform: uppercase;
+    }
+
+    /* ── Layout ────────────────────────────────────────────── */
+    .detalle-layout {
+        display: grid;
+        grid-template-columns: 1fr 1.4fr;
+        gap: 18px;
+        margin-bottom: 18px;
+    }
+
+    .ca-card {
+        background: var(--card-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 18px 18px 16px;
+        margin-bottom: 18px;
+    }
+
+    .detalle-layout .ca-card {
+        margin-bottom: 0;
+    }
+
+    .ca-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .ca-card-header h3 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: 0.4px;
+        color: var(--text-primary);
+    }
+
+    .header-count {
+        margin-left: auto;
+        background: var(--surface-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: 20px;
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 800;
+        padding: 2px 10px;
+    }
+
+    .ca-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: white;
+        font-size: 18px;
+    }
+
+    .ca-icon-green { background: var(--primary-green); }
+    .ca-icon-orange { background: var(--warning); }
+
+    /* ── Foto principal ────────────────────────────────────── */
+    .ca-photo {
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        border: 1.5px solid var(--border-color);
+        background: var(--surface-bg);
+        box-shadow: var(--shadow);
+        min-height: 240px;
+        display: flex;
+        align-items: stretch;
+    }
+
+    .ca-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        cursor: pointer;
+    }
+
+    .ca-photo-placeholder {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-hint);
+        gap: 8px;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        font-size: 12px;
+    }
+
+    .ca-photo-placeholder i {
+        font-size: 48px;
+    }
+
+    /* ── Lista de datos ────────────────────────────────────── */
+    .data-list {
+        display: grid;
+        grid-template-columns: minmax(140px, auto) 1fr;
+        gap: 0;
+        margin: 0;
+    }
+
+    .data-list dt {
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        padding: 10px 0;
+        border-bottom: 1.5px dashed var(--border-color);
+    }
+
+    .data-list dd {
+        color: var(--text-primary);
+        font-weight: 600;
+        margin: 0;
+        padding: 10px 0;
+        text-align: right;
+        border-bottom: 1.5px dashed var(--border-color);
+        overflow-wrap: anywhere;
+    }
+
+    .data-list dt:last-of-type,
+    .data-list dd:last-of-type {
+        border-bottom: none;
+    }
+
+    .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .data-list dd.small {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    /* ── Galería ───────────────────────────────────────────── */
+    .ca-thumb-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
+    }
+
+    .ca-thumb {
+        aspect-ratio: 1;
+        border-radius: var(--border-radius-sm);
+        overflow: hidden;
+        border: 1.5px solid var(--border-color);
+        cursor: pointer;
+        transition: transform 0.15s, border-color 0.15s;
+    }
+
+    .ca-thumb:hover {
+        transform: translateY(-2px);
+        border-color: var(--primary-green);
+    }
+
+    .ca-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    /* ── Timeline de verificaciones ────────────────────────── */
+    .inline-empty {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text-secondary);
+        background: var(--surface-bg);
+        border: 1.5px dashed var(--border-color);
+        border-radius: var(--border-radius-sm);
+        padding: 16px 18px;
+        font-weight: 600;
+    }
+
+    .inline-empty i {
+        font-size: 18px;
+        color: var(--text-hint);
+    }
+
+    .timeline {
+        list-style: none;
+        margin: 0;
+        padding: 0 0 0 6px;
+        position: relative;
+    }
+
+    /* El hilo vertical que une los hitos. */
+    .timeline::before {
+        content: "";
+        position: absolute;
+        left: 19px;
+        top: 10px;
+        bottom: 10px;
+        width: 2px;
+        background: var(--border-color);
+    }
+
+    .tl-item {
+        display: flex;
+        gap: 14px;
+        padding: 0 0 18px;
+        position: relative;
+    }
+
+    .tl-item:last-child {
+        padding-bottom: 0;
+    }
+
+    .tl-dot {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 13px;
+        color: white;
+        border: 2px solid var(--card-bg);
+        position: relative;
+        z-index: 1;
+    }
+
+    .tl-dot-ok      { background: var(--primary-green); }
+    .tl-dot-bad     { background: var(--danger); }
+    .tl-dot-warn    { background: var(--warning); }
+    .tl-dot-neutral { background: var(--text-hint); }
+
+    .tl-body {
+        flex: 1;
+        min-width: 0;
+        padding-top: 2px;
+    }
+
+    .tl-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .tl-outcome {
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: 0.3px;
+    }
+
+    .txt-ok      { color: var(--primary-green); }
+    .txt-bad     { color: var(--danger); }
+    .txt-neutral { color: var(--text-primary); }
+
+    .tl-date {
+        color: var(--text-secondary);
+        font-size: 12px;
+        margin-left: auto;
+    }
+
+    .tl-metrics {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+    }
+
+    .tl-metrics strong {
+        color: var(--text-primary);
+        font-weight: 800;
+        margin-left: 4px;
+        text-transform: none;
+    }
+
+    .tl-reason {
+        color: var(--text-secondary);
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+    /* ── Estado vacío ──────────────────────────────────────── */
+    .empty-state {
+        text-align: center;
+        padding: 70px 20px;
+        background-color: var(--card-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+    }
+
+    .empty-state-icon {
+        font-size: 48px;
+        color: var(--primary-green);
+    }
+
+    .empty-state h3 {
+        margin: 18px 0 10px;
+        color: var(--text-primary);
+        font-size: 20px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+    }
+
+    .empty-state p {
+        color: var(--text-secondary);
+        margin: 0 auto;
+        max-width: 420px;
+    }
+
+    @@media (max-width: 1000px) {
+        .detalle-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

@@ -6,49 +6,77 @@
 
 <PageTitle>Clientes — IdAnimal</PageTitle>
 
-<div class="container-fluid p-4">
-    <h1 class="mb-4">Clientes</h1>
+<div class="page-container">
+    <div class="page-header">
+        <h1>Clientes</h1>
+        @if (productores is not null && productores.Count > 0)
+        {
+            <span class="count-chip">
+                @productores.Count cliente@(productores.Count == 1 ? "" : "s")
+            </span>
+        }
+    </div>
 
     @if (cargando)
     {
-        <p>Cargando…</p>
+        <div class="text-center mt-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
     }
     else if (productores is null || productores.Count == 0)
     {
-        <div class="alert alert-secondary">
-            Todavía no hay productores vinculados a tu cuenta.
+        <div class="empty-state">
+            <i class="bi bi-people empty-state-icon"></i>
+            <h3>Todavía no hay clientes</h3>
+            <p>
+                Cuando un productor acepte tu invitación, sus animales van a
+                aparecer acá.
+            </p>
         </div>
     }
     else
     {
-        <table class="table table-hover align-middle">
-            <thead>
-                <tr>
-                    <th>Productor</th>
-                    <th>Email</th>
-                    <th class="text-end">Establecimientos</th>
-                    <th class="text-end">Animales</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var p in productores)
-                {
+        <div class="table-responsive">
+            <table class="table table-hover portal-table align-middle">
+                <thead>
                     <tr>
-                        <td class="fw-bold">@p.FullName</td>
-                        <td class="text-secondary">@p.Email</td>
-                        <td class="text-end">@p.Establecimientos</td>
-                        <td class="text-end">@p.Animales</td>
-                        <td class="text-end">
-                            <button class="btn btn-sm btn-outline-primary"
-                                    @onclick="() => VerAnimales(p.Id)">
-                                Ver animales
-                            </button>
-                        </td>
+                        <th>Productor</th>
+                        <th>Email</th>
+                        <th class="text-end">Establecimientos</th>
+                        <th class="text-end">Animales</th>
+                        <th class="text-end">Acciones</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var p in productores)
+                    {
+                        <tr>
+                            <td>
+                                <div class="prod-cell">
+                                    <span class="prod-avatar">@Iniciales(p.FullName)</span>
+                                    <strong>@p.FullName</strong>
+                                </div>
+                            </td>
+                            <td class="text-muted-soft">@p.Email</td>
+                            <td class="text-end">
+                                <span class="badge bg-secondary">@p.Establecimientos</span>
+                            </td>
+                            <td class="text-end">
+                                <span class="badge bg-primary">@p.Animales</span>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary"
+                                        @onclick="() => VerAnimales(p.Id)">
+                                    <i class="bi bi-list-ul"></i> Ver animales
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     }
 </div>
 
@@ -64,4 +92,123 @@
 
     private void VerAnimales(int productorId)
         => Nav.NavigateTo($"/animales?productor_id={productorId}");
+
+    /// Iniciales para el avatar. Un nombre vacío no debe romper la fila.
+    private static string Iniciales(string? nombre)
+    {
+        if (string.IsNullOrWhiteSpace(nombre)) return "—";
+        var partes = nombre.Trim()
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var ini = string.Concat(partes.Take(2).Select(p => char.ToUpperInvariant(p[0])));
+        return string.IsNullOrEmpty(ini) ? "—" : ini;
+    }
 }
+
+<style>
+    .page-container {
+        padding: 25px;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 30px;
+    }
+
+    .page-header h1 {
+        color: var(--text-primary);
+        font-size: 32px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin: 0;
+    }
+
+    .count-chip {
+        background: var(--surface-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        padding: 6px 12px;
+        text-transform: uppercase;
+    }
+
+    /* ── Estado vacío ──────────────────────────────────────── */
+    .empty-state {
+        text-align: center;
+        padding: 70px 20px;
+        background-color: var(--card-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+    }
+
+    .empty-state-icon {
+        font-size: 48px;
+        color: var(--primary-green);
+    }
+
+    .empty-state h3 {
+        margin: 18px 0 10px;
+        color: var(--text-primary);
+        font-size: 20px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+    }
+
+    .empty-state p {
+        color: var(--text-secondary);
+        margin: 0 auto;
+        max-width: 420px;
+    }
+
+    /* ── Tabla ─────────────────────────────────────────────── */
+    .table-responsive {
+        background-color: var(--card-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .portal-table {
+        margin-bottom: 0;
+    }
+
+    .portal-table tbody tr:last-child td {
+        border-bottom: none !important;
+    }
+
+    .text-muted-soft {
+        color: var(--text-secondary) !important;
+        font-size: 13px;
+    }
+
+    .prod-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .prod-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--green-light);
+        border: 1.5px solid var(--primary-green);
+        color: var(--green-dark);
+        font-size: 12px;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+</style>

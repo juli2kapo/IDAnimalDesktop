@@ -7,48 +7,66 @@
 
 <PageTitle>Portal — IdAnimal</PageTitle>
 
-<div class="container-fluid p-4">
-    <h1 class="mb-4">@(me?.Cliente?.Nombre ?? "Portal")</h1>
+<div class="page-container">
+    <div class="page-header">
+        <h1>@(me?.Cliente?.Nombre ?? "Portal")</h1>
+        @if (!string.IsNullOrWhiteSpace(me?.Cliente?.Cuit))
+        {
+            <span class="cuit-chip">CUIT @me!.Cliente!.Cuit</span>
+        }
+    </div>
 
     @if (cargando)
     {
-        <p>Cargando…</p>
+        <div class="text-center mt-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
     }
     else
     {
-        <div class="row g-3 mb-4">
-            <div class="col-md-4">
-                <div class="card p-3">
-                    <div class="text-secondary small">Animales asegurados</div>
-                    <div class="fs-2 fw-bold">@(datos?.Animales ?? 0)</div>
+        <div class="stat-grid">
+            <div class="stat-card">
+                <span class="ca-icon ca-icon-green"><i class="bi bi-clipboard2-pulse-fill"></i></span>
+                <div class="stat-body">
+                    <div class="stat-label">Animales asegurados</div>
+                    <div class="stat-value">@(datos?.Animales ?? 0)</div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card p-3">
-                    <div class="text-secondary small">Clientes</div>
-                    <div class="fs-2 fw-bold">@(datos?.Productores ?? 0)</div>
+            <div class="stat-card">
+                <span class="ca-icon ca-icon-brown"><i class="bi bi-people-fill"></i></span>
+                <div class="stat-body">
+                    <div class="stat-label">Clientes</div>
+                    <div class="stat-value">@(datos?.Productores ?? 0)</div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card p-3">
-                    <div class="text-secondary small">Verificaciones (30 días)</div>
-                    <div class="fs-2 fw-bold">@(datos?.Verificaciones30d ?? 0)</div>
+            <div class="stat-card">
+                <span class="ca-icon ca-icon-orange"><i class="bi bi-shield-check"></i></span>
+                <div class="stat-body">
+                    <div class="stat-label">Verificaciones (30 días)</div>
+                    <div class="stat-value">@(datos?.Verificaciones30d ?? 0)</div>
                 </div>
             </div>
         </div>
 
-        <div class="card p-3">
-            <label class="form-label fw-bold">Buscar un animal</label>
-            <div class="d-flex gap-2">
+        <div class="ca-card search-card">
+            <div class="ca-card-header">
+                <span class="ca-icon ca-icon-green"><i class="bi bi-search"></i></span>
+                <h3>Buscar un animal</h3>
+            </div>
+            <div class="search-row">
                 <input class="form-control" placeholder="Caravana o caravana electrónica"
                        @bind="busqueda" @bind:event="oninput"
                        @onkeydown="@(e => { if (e.Key == "Enter") Buscar(); })" />
-                <button class="btn btn-primary" @onclick="Buscar">Buscar</button>
+                <button class="btn btn-primary" @onclick="Buscar">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
             </div>
-            <div class="form-text">
+            <p class="search-hint">
                 Llega un siniestro con un número de caravana: buscalo acá para ver
                 de qué cliente es.
-            </div>
+            </p>
         </div>
     }
 </div>
@@ -72,3 +90,138 @@
         Nav.NavigateTo($"/animales?q={Uri.EscapeDataString(busqueda)}");
     }
 }
+
+<style>
+    .page-container {
+        padding: 25px;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 30px;
+    }
+
+    .page-header h1 {
+        color: var(--text-primary);
+        font-size: 32px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin: 0;
+    }
+
+    .cuit-chip {
+        background: var(--surface-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        padding: 6px 12px;
+        text-transform: uppercase;
+    }
+
+    /* ── Tarjetas de contador ──────────────────────────────── */
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+        margin-bottom: 22px;
+    }
+
+    .stat-card {
+        background: var(--card-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .stat-body {
+        min-width: 0;
+    }
+
+    .stat-label {
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+    }
+
+    .stat-value {
+        color: var(--text-primary);
+        font-size: 34px;
+        font-weight: 900;
+        line-height: 1.1;
+    }
+
+    /* Mismo lenguaje de "chip de icono" que la ficha del animal. */
+    .ca-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: white;
+        font-size: 19px;
+    }
+
+    .ca-icon-green { background: var(--primary-green); }
+    .ca-icon-orange { background: var(--warning); }
+    .ca-icon-brown { background: var(--border-strong); }
+
+    .ca-card {
+        background: var(--card-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 18px 18px 16px;
+    }
+
+    .ca-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .ca-card-header h3 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: 0.4px;
+        color: var(--text-primary);
+    }
+
+    .search-card {
+        max-width: 720px;
+    }
+
+    .search-row {
+        display: flex;
+        gap: 10px;
+    }
+
+    .search-hint {
+        color: var(--text-secondary);
+        font-size: 13px;
+        margin: 10px 0 0;
+    }
+
+    @@media (max-width: 900px) {
+        .stat-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

@@ -7,80 +7,126 @@
 
 <PageTitle>Animales — IdAnimal</PageTitle>
 
-<div class="container-fluid p-4">
-    <h1 class="mb-3">Animales</h1>
-
-    <div class="d-flex gap-2 mb-3">
-        <input class="form-control" placeholder="Caravana o caravana electrónica"
-               @bind="q" @bind:event="oninput"
-               @onkeydown="@(e => { if (e.Key == "Enter") { pagina = 1; _ = Cargar(); } })" />
-        <button class="btn btn-primary" @onclick="() => { pagina = 1; return Cargar(); }">
-            Buscar
-        </button>
+<div class="page-container">
+    <div class="page-header">
+        <h1>Animales</h1>
+        @if (datos is not null && datos.Items.Count > 0)
+        {
+            <span class="count-chip">
+                @datos.Total animal@(datos.Total == 1 ? "" : "es")
+            </span>
+        }
     </div>
 
-    @* El filtro por productor llega en la URL desde la lista de clientes. Si
-       se queda activo en silencio, buscar una caravana que SÍ existe devuelve
-       "Sin resultados" y no hay nada en pantalla que explique por qué. *@
-    @if (productorId is not null)
-    {
-        <div class="mb-3">
-            <span class="badge bg-secondary">
-                Filtrado por un cliente
-                <button type="button" class="btn btn-sm btn-link text-white p-0 ms-2"
-                        style="text-decoration:underline"
-                        @onclick="QuitarFiltroProductor">quitar filtro</button>
-            </span>
+    <div class="filters-container">
+        <div class="search-row">
+            <input class="form-control" placeholder="Caravana o caravana electrónica"
+                   @bind="q" @bind:event="oninput"
+                   @onkeydown="@(e => { if (e.Key == "Enter") { pagina = 1; _ = Cargar(); } })" />
+            <button class="btn btn-primary" @onclick="() => { pagina = 1; return Cargar(); }">
+                <i class="bi bi-search"></i> Buscar
+            </button>
         </div>
-    }
+
+        @* El filtro por productor llega en la URL desde la lista de clientes. Si
+           se queda activo en silencio, buscar una caravana que SÍ existe devuelve
+           "Sin resultados" y no hay nada en pantalla que explique por qué. *@
+        @if (productorId is not null)
+        {
+            <div class="filter-chips">
+                <span class="filter-chip">
+                    <i class="bi bi-funnel-fill"></i>
+                    Filtrado por un cliente
+                    <button type="button" class="filter-chip-x" title="Quitar filtro"
+                            @onclick="QuitarFiltroProductor">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </span>
+            </div>
+        }
+    </div>
 
     @if (cargando)
     {
-        <p>Cargando…</p>
+        <div class="text-center mt-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
     }
     else if (datos is null || datos.Items.Count == 0)
     {
-        <div class="alert alert-secondary">Sin resultados.</div>
+        <div class="empty-state">
+            <i class="bi bi-search empty-state-icon"></i>
+            <h3>Sin resultados</h3>
+            <p>
+                @(string.IsNullOrWhiteSpace(q) && productorId is null
+                    ? "Todavía no hay animales visibles para tu cuenta."
+                    : "No encontramos animales con los filtros aplicados.")
+            </p>
+        </div>
     }
     else
     {
-        <div class="text-secondary small mb-2">
-            @datos.Total animal@(datos.Total == 1 ? "" : "es")
-        </div>
-        <table class="table table-hover align-middle">
-            <thead>
-                <tr>
-                    <th>Caravana</th>
-                    <th>Electrónica</th>
-                    <th>Productor</th>
-                    <th>Establecimiento</th>
-                    <th>Provincia</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var a in datos.Items)
-                {
-                    <tr style="cursor:pointer" @onclick="() => Abrir(a.GlobalId)">
-                        <td class="fw-bold">@a.Caravan</td>
-                        <td class="font-monospace small">@a.Eid</td>
-                        <td>@a.Productor</td>
-                        <td>@a.Establecimiento</td>
-                        <td>@a.Provincia</td>
+        <div class="table-responsive">
+            <table class="table table-hover portal-table align-middle">
+                <thead>
+                    <tr>
+                        <th class="th-foto">Foto</th>
+                        <th>Caravana</th>
+                        <th>Electrónica</th>
+                        <th>Productor</th>
+                        <th>Establecimiento</th>
+                        <th>Provincia</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var a in datos.Items)
+                    {
+                        <tr class="clickable-row" @onclick="() => Abrir(a.GlobalId)">
+                            <td class="td-foto">
+                                @{
+                                    // Puede no haber foto: en ese caso va un marcador
+                                    // del mismo tamaño, para que la fila no se desarme
+                                    // ni aparezca el icono de imagen rota del navegador.
+                                    var thumb = ApiUrl.Resolve(a.MainImageUrl);
+                                }
+                                @if (thumb is not null)
+                                {
+                                    <img class="row-thumb" src="@thumb" alt="@a.Caravan" />
+                                }
+                                else
+                                {
+                                    <span class="row-thumb row-thumb-empty" title="Sin foto">
+                                        <i class="bi bi-image"></i>
+                                    </span>
+                                }
+                            </td>
+                            <td><strong class="caravan-cell">@a.Caravan</strong></td>
+                            <td class="mono-cell">@(string.IsNullOrWhiteSpace(a.Eid) ? "—" : a.Eid)</td>
+                            <td>@(string.IsNullOrWhiteSpace(a.Productor) ? "—" : a.Productor)</td>
+                            <td>@(string.IsNullOrWhiteSpace(a.Establecimiento) ? "—" : a.Establecimiento)</td>
+                            <td>@(string.IsNullOrWhiteSpace(a.Provincia) ? "—" : a.Provincia)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
 
         @if (datos.Total > datos.PageSize)
         {
-            <div class="d-flex gap-2 align-items-center">
-                <button class="btn btn-sm btn-outline-secondary"
+            <div class="pagination-container">
+                <button class="btn btn-secondary btn-sm"
                         disabled="@(pagina <= 1)"
-                        @onclick="() => { pagina--; return Cargar(); }">Anterior</button>
-                <span class="small">Página @pagina de @TotalPaginas</span>
-                <button class="btn btn-sm btn-outline-secondary"
+                        @onclick="() => { pagina--; return Cargar(); }">
+                    <i class="bi bi-chevron-left"></i> Anterior
+                </button>
+                <span class="page-indicator">Página @pagina de @TotalPaginas</span>
+                <button class="btn btn-secondary btn-sm"
                         disabled="@(pagina >= TotalPaginas)"
-                        @onclick="() => { pagina++; return Cargar(); }">Siguiente</button>
+                        @onclick="() => { pagina++; return Cargar(); }">
+                    Siguiente <i class="bi bi-chevron-right"></i>
+                </button>
             </div>
         }
     }
@@ -128,3 +174,193 @@
         await Cargar();
     }
 }
+
+<style>
+    .page-container {
+        padding: 25px;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 26px;
+    }
+
+    .page-header h1 {
+        color: var(--text-primary);
+        font-size: 32px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin: 0;
+    }
+
+    .count-chip {
+        background: var(--surface-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        padding: 6px 12px;
+        text-transform: uppercase;
+    }
+
+    /* ── Filtros ───────────────────────────────────────────── */
+    .filters-container {
+        background-color: var(--card-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius);
+        padding: 18px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow);
+    }
+
+    .search-row {
+        display: flex;
+        gap: 10px;
+    }
+
+    .filter-chips {
+        margin-top: 12px;
+    }
+
+    .filter-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--green-light);
+        border: 1.5px solid var(--primary-green);
+        border-radius: var(--border-radius-sm);
+        color: var(--green-dark);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        padding: 6px 10px;
+        text-transform: uppercase;
+    }
+
+    .filter-chip-x {
+        background: transparent;
+        border: none;
+        color: var(--green-dark);
+        cursor: pointer;
+        font-size: 11px;
+        line-height: 1;
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
+
+    .filter-chip-x:hover {
+        background: rgba(46, 74, 40, 0.15);
+    }
+
+    /* ── Estado vacío ──────────────────────────────────────── */
+    .empty-state {
+        text-align: center;
+        padding: 70px 20px;
+        background-color: var(--card-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+    }
+
+    .empty-state-icon {
+        font-size: 48px;
+        color: var(--primary-green);
+    }
+
+    .empty-state h3 {
+        margin: 18px 0 10px;
+        color: var(--text-primary);
+        font-size: 20px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+    }
+
+    .empty-state p {
+        color: var(--text-secondary);
+        margin: 0 auto;
+        max-width: 420px;
+    }
+
+    /* ── Tabla ─────────────────────────────────────────────── */
+    .table-responsive {
+        background-color: var(--card-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .portal-table {
+        margin-bottom: 0;
+    }
+
+    .portal-table tbody tr:last-child td {
+        border-bottom: none !important;
+    }
+
+    .clickable-row {
+        cursor: pointer;
+    }
+
+    .th-foto,
+    .td-foto {
+        width: 72px;
+    }
+
+    /* La miniatura y el marcador comparten medidas: una fila sin foto ocupa
+       exactamente lo mismo que una con foto. */
+    .row-thumb {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--border-radius-sm);
+        border: 1.5px solid var(--border-color);
+        object-fit: cover;
+        display: block;
+        background: var(--surface-bg);
+    }
+
+    .row-thumb-empty {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-hint);
+        font-size: 18px;
+    }
+
+    .caravan-cell {
+        color: var(--green-dark);
+        font-weight: 800;
+        letter-spacing: 0.4px;
+    }
+
+    .mono-cell {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    /* ── Paginado ──────────────────────────────────────────── */
+    .pagination-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        margin-top: 20px;
+    }
+
+    .page-indicator {
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+</style>
