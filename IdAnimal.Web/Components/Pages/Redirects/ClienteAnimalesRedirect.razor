@@ -1,0 +1,16 @@
+@page "/cliente/animales"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject NavigationManager Nav
+
+@* Alias viejo. La URL nueva y unificada es /animales. Preserva la query
+   string (filtros de búsqueda / productor) que ya viene usándose en
+   enlaces desde el dashboard y la lista de productores. *@
+
+@code {
+    protected override void OnInitialized()
+    {
+        var uri = new Uri(Nav.Uri);
+        var destino = "/animales" + uri.Query;
+        Nav.NavigateTo(destino, replace: true);
+    }
+}

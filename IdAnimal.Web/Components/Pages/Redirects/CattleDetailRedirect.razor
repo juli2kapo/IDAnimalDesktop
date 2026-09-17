@@ -1,0 +1,12 @@
+@page "/cattle/{Id:int}"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject NavigationManager Nav
+
+@* Alias viejo. La URL nueva y unificada es /animales/{id}. *@
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    protected override void OnInitialized()
+        => Nav.NavigateTo($"/animales/{Id}", replace: true);
+}

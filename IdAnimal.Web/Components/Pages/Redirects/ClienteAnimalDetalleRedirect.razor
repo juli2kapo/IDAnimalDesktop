@@ -1,0 +1,12 @@
+@page "/cliente/animales/{GlobalId}"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject NavigationManager Nav
+
+@* Alias viejo. La URL nueva y unificada es /animales/{globalId}. *@
+
+@code {
+    [Parameter] public string GlobalId { get; set; } = string.Empty;
+
+    protected override void OnInitialized()
+        => Nav.NavigateTo($"/animales/{GlobalId}", replace: true);
+}

@@ -1,0 +1,11 @@
+@page "/cattle"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject NavigationManager Nav
+
+@* Alias viejo. Se mantiene andando para no romper favoritos y enlaces
+   existentes: la URL nueva y unificada es /animales. *@
+
+@code {
+    protected override void OnInitialized()
+        => Nav.NavigateTo("/animales", replace: true);
+}

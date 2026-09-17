@@ -30,16 +30,19 @@
 
         <div class="mb-3">
             <label class="form-label">Tu nombre</label>
-            <input class="form-control" @bind="nombre" />
+            <input class="form-control" @bind="nombre"
+                   @onkeydown="@(e => { if (e.Key == "Enter" && !enviando) { _ = Crear(); } })" />
         </div>
         <div class="mb-3">
             <label class="form-label">Contraseña</label>
-            <input type="password" class="form-control" @bind="pass1" />
+            <input type="password" class="form-control" @bind="pass1"
+                   @onkeydown="@(e => { if (e.Key == "Enter" && !enviando) { _ = Crear(); } })" />
             <div class="form-text">Al menos 6 caracteres.</div>
         </div>
         <div class="mb-3">
             <label class="form-label">Repetir contraseña</label>
-            <input type="password" class="form-control" @bind="pass2" />
+            <input type="password" class="form-control" @bind="pass2"
+                   @onkeydown="@(e => { if (e.Key == "Enter" && !enviando) { _ = Crear(); } })" />
         </div>
 
         @if (!string.IsNullOrEmpty(error))

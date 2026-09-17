@@ -1,0 +1,8 @@
+@page "/clientes"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@* Lista de productores vinculados a una aseguradora. Hoy sólo la usan
+   usuarios tipo "client"; se deja como alias directo al componente
+   existente en vez de agregar una rama de productor que todavía no existe. *@
+
+<IdAnimal.Web.Components.Pages.Cliente.Productores />

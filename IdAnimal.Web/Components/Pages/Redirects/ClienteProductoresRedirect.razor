@@ -1,0 +1,10 @@
+@page "/cliente/productores"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject NavigationManager Nav
+
+@* Alias viejo. La URL nueva y unificada es /clientes. *@
+
+@code {
+    protected override void OnInitialized()
+        => Nav.NavigateTo("/clientes", replace: true);
+}

@@ -1,0 +1,26 @@
+@page "/animales/{Id}"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@* Punto de entrada único para el detalle de un animal. Las dos páginas
+   existentes toman parámetros de tipo DISTINTO:
+     - la del productor:  {Id:int}       (identificador numérico interno)
+     - la del cliente:    {GlobalId}     (hex de 32 caracteres)
+   Para no poder enrutar mal, esta página toma el segmento como STRING sin
+   restricción y decide por su FORMA: si parsea como int, es el productor;
+   si no, se asume GlobalId y se delega al cliente. Un id numérico jamás
+   puede ser al mismo tiempo un GlobalId hex de 32 caracteres (y viceversa),
+   así que la forma alcanza para decidir sin ambigüedad — no hace falta
+   mirar el claim `typ` acá. *@
+
+@if (int.TryParse(Id, out var cattleId))
+{
+    <IdAnimal.Web.Components.Pages.CattleDetail Id="cattleId" />
+}
+else
+{
+    <IdAnimal.Web.Components.Pages.Cliente.AnimalDetalle GlobalId="Id" />
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = string.Empty;
+}

@@ -1,0 +1,33 @@
+@page "/animales"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthStateProvider
+
+@* Punto de entrada único para la lista de animales. Despacha por el claim
+   `typ` del token: "client" = aseguradora (portal cliente), cualquier otro
+   valor (incluida su ausencia) = productor. Los tokens emitidos antes de que
+   existiera el claim no lo tienen, así que la ausencia DEBE mapear a
+   productor para no romper sesiones ya activas. *@
+
+@if (esCliente is null)
+{
+    <text></text>
+}
+else if (esCliente == true)
+{
+    <IdAnimal.Web.Components.Pages.Cliente.Animales />
+}
+else
+{
+    <IdAnimal.Web.Components.Pages.Cattle />
+}
+
+@code {
+    private bool? esCliente;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        esCliente = state.User.FindFirst("typ")?.Value == "client";
+    }
+}
