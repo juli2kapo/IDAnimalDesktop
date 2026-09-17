@@ -55,7 +55,7 @@ public class AuthService
                 Email = cli.Email,
                 FullName = cli.FullName,
                 Token = cli.Token,
-                ExpiresAt = DateTime.Parse(cli.ExpiresAt),
+                ExpiresAt = DateTime.Parse(cli.ExpiresAt, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind),
             };
         }
         catch

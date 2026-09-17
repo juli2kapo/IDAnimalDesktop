@@ -1,4 +1,5 @@
 @page "/cliente/animales/{GlobalId}"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @using IdAnimal.Shared.DTOs.Clientes
 @using IdAnimal.Web.Services
 @inject ClientPortalService Portal
