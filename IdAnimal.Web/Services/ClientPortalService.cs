@@ -90,4 +90,23 @@ public class ClientPortalService
         }
         catch { return null; }
     }
+
+    /// Listado de invitaciones pendientes del cliente. Nunca trae el token/url.
+    public async Task<List<InvitacionDto>?> GetInvitacionesAsync()
+        => await _apiClient.GetAsync<List<InvitacionDto>>("/api/v1/clientes/invitaciones");
+
+    /// La URL de la invitación viene UNA sola vez, en esta respuesta.
+    public async Task<InvitacionCreadaDto?> InvitarAsync(string email, bool esAdmin)
+    {
+        var r = await _apiClient.PostAsync("/api/v1/clientes/invitaciones",
+                                           new { email, is_admin = esAdmin });
+        if (!r.IsSuccessStatusCode) return null;
+        return await r.Content.ReadFromJsonAsync<InvitacionCreadaDto>(ApiJson.Options);
+    }
+
+    public async Task<bool> RevocarInvitacionAsync(int id)
+    {
+        var r = await _apiClient.DeleteAsync($"/api/v1/clientes/invitaciones/{id}");
+        return r.IsSuccessStatusCode;
+    }
 }

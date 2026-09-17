@@ -1,0 +1,125 @@
+@page "/cliente/usuarios"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using IdAnimal.Shared.DTOs.Clientes
+@using IdAnimal.Web.Services
+@inject ClientPortalService Portal
+
+<PageTitle>Usuarios — IdAnimal</PageTitle>
+
+<div class="container-fluid p-4">
+    <h1 class="mb-4">Usuarios</h1>
+
+    <div class="card p-3 mb-4">
+        <div class="fw-bold mb-2">Invitar a un colega</div>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <input class="form-control" style="max-width:320px" type="email"
+                   placeholder="email@empresa.com" @bind="email" />
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="adm" @bind="esAdmin" />
+                <label class="form-check-label" for="adm">Puede invitar a otros</label>
+            </div>
+            <button class="btn btn-primary" @onclick="Invitar" disabled="@enviando">
+                @(enviando ? "Creando…" : "Crear invitación")
+            </button>
+        </div>
+
+        @if (creada is not null)
+        {
+            <div class="alert alert-success mt-3 mb-0">
+                <div class="fw-bold">Invitación para @creada.Email</div>
+                <div class="small mb-2">
+                    Mandale este link. Sirve una sola vez y vence el @creada.ExpiresAt.
+                    <strong>No se puede volver a ver:</strong> si se pierde,
+                    revocala y creá otra.
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <input class="form-control font-monospace small" readonly
+                           value="@creada.Url" id="invite-url" />
+                    <button class="btn btn-sm btn-outline-secondary"
+                            @onclick="CopiarUrl">Copiar</button>
+                </div>
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-warning mt-3 mb-0">@error</div>
+        }
+    </div>
+
+    <h2 class="h5 mb-3">Invitaciones pendientes</h2>
+    @if (cargando)
+    {
+        <p>Cargando…</p>
+    }
+    else if (invitaciones is null || invitaciones.Count == 0)
+    {
+        <div class="alert alert-secondary">No hay invitaciones pendientes.</div>
+    }
+    else
+    {
+        <table class="table align-middle">
+            <thead>
+                <tr><th>Email</th><th>Vence</th><th>Invitó</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var i in invitaciones)
+                {
+                    <tr>
+                        <td>
+                            @i.Email
+                            @if (i.IsAdmin)
+                            {
+                                <span class="badge bg-secondary ms-2">admin</span>
+                            }
+                        </td>
+                        <td class="small">@i.ExpiresAt</td>
+                        <td class="small text-secondary">@(i.InvitadoPor ?? "—")</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-danger"
+                                    @onclick="() => Revocar(i.Id)">Revocar</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    private List<InvitacionDto>? invitaciones;
+    private InvitacionCreadaDto? creada;
+    private bool cargando = true, enviando, esAdmin;
+    private string email = "", error = "";
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync() => await Cargar();
+
+    private async Task Cargar()
+    {
+        cargando = true;
+        invitaciones = await Portal.GetInvitacionesAsync();
+        cargando = false;
+    }
+
+    private async Task Invitar()
+    {
+        error = ""; creada = null;
+        if (string.IsNullOrWhiteSpace(email)) { error = "Poné un email."; return; }
+        enviando = true;
+        creada = await Portal.InvitarAsync(email, esAdmin);
+        enviando = false;
+        if (creada is null) { error = "No se pudo crear la invitación."; return; }
+        email = ""; esAdmin = false;
+        await Cargar();
+    }
+
+    private async Task Revocar(int id)
+    {
+        if (await Portal.RevocarInvitacionAsync(id)) await Cargar();
+        else error = "No se pudo revocar.";
+    }
+
+    private async Task CopiarUrl()
+        => await JS.InvokeVoidAsync("navigator.clipboard.writeText", creada!.Url);
+}
