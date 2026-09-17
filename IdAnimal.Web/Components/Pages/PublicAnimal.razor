@@ -70,6 +70,18 @@
                         <dd class="pub-mono">@animal.Eid</dd>
                     </div>
                 }
+                @if (!string.IsNullOrWhiteSpace(animal.GlobalId))
+                {
+                    <div class="pub-item pub-item-wide">
+                        <dt>ID de registro</dt>
+                        <dd class="pub-mono pub-id">
+                            <span id="animal-id">@animal.GlobalId</span>
+                            <button type="button" class="pub-copy"
+                                    onclick="copiarIdAnimal(this)"
+                                    aria-label="Copiar el ID de registro">Copiar</button>
+                        </dd>
+                    </div>
+                }
                 @if (Show("Categoria") is string cat)
                 {
                     <div class="pub-item">
@@ -277,6 +289,31 @@
         letter-spacing: .02em;
     }
 
+    /* El id son 32 hex: en un teléfono no entra en una línea, así que se
+       permite el corte. `anywhere` y no `break-all` para que no parta también
+       el texto del botón. */
+    .pub-id {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        flex-wrap: wrap;
+        overflow-wrap: anywhere;
+    }
+
+    .pub-copy {
+        flex: none;
+        border: 1px solid var(--border-color);
+        background: transparent;
+        color: inherit;
+        border-radius: 6px;
+        padding: .15rem .5rem;
+        font-size: .75rem;
+        font-family: inherit;
+        cursor: pointer;
+    }
+
+    .pub-copy:hover { background: rgba(0, 0, 0, .05); }
+
     /* --- secciones --- */
     .pub-section { border-bottom: 1px solid var(--border-color); }
 
@@ -379,3 +416,40 @@
         .pub-name { font-size: 1.6rem; }
     }
 </style>
+
+<script>
+    // Copiar a mano 32 hex desde la pantalla de un teléfono es justo donde
+    // aparecen los errores de transcripción — que es lo que este botón evita.
+    // `navigator.clipboard` no existe fuera de un contexto seguro (http sin
+    // TLS), así que hay un fallback con execCommand.
+    function copiarIdAnimal(btn) {
+        var el = document.getElementById('animal-id');
+        if (!el) return;
+        var texto = el.textContent.trim();
+        var original = btn.textContent;
+
+        function ok() {
+            btn.textContent = 'Copiado';
+            setTimeout(function () { btn.textContent = original; }, 1500);
+        }
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(texto).then(ok, function () {
+                btn.textContent = 'Error';
+                setTimeout(function () { btn.textContent = original; }, 1500);
+            });
+            return;
+        }
+
+        var ta = document.createElement('textarea');
+        ta.value = texto;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); ok(); }
+        catch (e) { btn.textContent = 'Error'; setTimeout(function () { btn.textContent = original; }, 1500); }
+        document.body.removeChild(ta);
+    }
+</script>
