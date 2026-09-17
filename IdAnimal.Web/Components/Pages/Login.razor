@@ -165,8 +165,13 @@
 
             if (response != null)
             {
-                await AuthStateProvider.LoginAsync(response.Token); 
-                Navigation.NavigateTo("/");
+                await AuthStateProvider.LoginAsync(response.Token);
+
+                // El claim `typ` decide dónde cae. Ausente = productor: los tokens
+                // emitidos antes de que existiera el claim siguen siendo válidos.
+                var state = await AuthStateProvider.GetAuthenticationStateAsync();
+                var tipo = state.User.FindFirst("typ")?.Value;
+                Navigation.NavigateTo(tipo == "client" ? "/cliente" : "/");
             }
             else
             {
