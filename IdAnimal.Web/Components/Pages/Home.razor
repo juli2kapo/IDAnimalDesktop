@@ -1,8 +1,20 @@
 @page "/"
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using IdAnimal.Web.Services
+@inject AuthStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 
 <PageTitle>IdAnimal - Sistema de Gestión de Ganado</PageTitle>
 
+@if (!isReady)
+{
+    @* Estado neutro mientras se resuelve la sesión (el token recién está
+       disponible cuando conecta el circuito interactivo, por el
+       prerender: false). Evita el destello de la landing de productor
+       antes de redirigir a un usuario cliente. *@
+}
+else if (!isClientUser)
+{
 <div class="landing-page">
     <div class="hero-section">
         <div class="hero-content">
@@ -78,6 +90,7 @@
         </div>
     </div>
 </div>
+}
 
 <style>
     .landing-page {
@@ -376,3 +389,28 @@
         }
     }
 </style>
+
+@code {
+    private bool isReady = false;
+    private bool isClientUser = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        var tipo = state.User.Identity?.IsAuthenticated == true
+            ? state.User.FindFirst("typ")?.Value
+            : null;
+
+        if (tipo == "client")
+        {
+            // Usuario de aseguradora: su home es el dashboard de cliente, no la
+            // landing de productor. Redirect en vez de duplicar el markup.
+            Navigation.NavigateTo("/cliente", replace: true);
+            return;
+        }
+
+        // No autenticado, o productor (incluye tokens viejos sin claim `typ`):
+        // la landing de productor de siempre.
+        isReady = true;
+    }
+}
