@@ -1,0 +1,11 @@
+@page "/cliente/usuarios"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject NavigationManager Nav
+
+@* Alias viejo. La pantalla de Usuarios se absorbió en Organización,
+   que además suma roles y campos custom. La URL nueva es /organizacion. *@
+
+@code {
+    protected override void OnInitialized()
+        => Nav.NavigateTo("/organizacion", replace: true);
+}

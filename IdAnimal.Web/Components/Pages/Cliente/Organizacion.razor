@@ -1,0 +1,522 @@
+@page "/organizacion"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using IdAnimal.Shared.DTOs.Clientes
+@using IdAnimal.Web.Services
+@inject ClientPortalService Portal
+@inject IJSRuntime JS
+
+<PageTitle>Organización — IdAnimal</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Organización</h1>
+    </div>
+
+    <!-- ═══════════════════ Usuarios ═══════════════════ -->
+    <div class="ca-card">
+        <div class="ca-card-header">
+            <span class="ca-icon ca-icon-green"><i class="bi bi-people-fill"></i></span>
+            <h3>Usuarios</h3>
+            @if (usuarios is not null && usuarios.Count > 0)
+            {
+                <span class="header-count">@usuarios.Count</span>
+            }
+        </div>
+
+        @if (cargandoUsuarios)
+        {
+            <div class="text-center my-4">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        }
+        else if (usuarios is null || usuarios.Count == 0)
+        {
+            <div class="inline-empty">
+                <i class="bi bi-person-x"></i>
+                <span>Todavía no hay usuarios en la organización.</span>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover portal-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th class="text-center">Admin</th>
+                            <th class="text-center">Verificar</th>
+                            <th class="text-center">Anotar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in usuarios)
+                        {
+                            <tr>
+                                <td><strong>@(string.IsNullOrWhiteSpace(u.FullName) ? "—" : u.FullName)</strong></td>
+                                <td class="text-muted-soft">@u.Email</td>
+                                <td class="text-center">
+                                    <input class="form-check-input" type="checkbox"
+                                           checked="@(u.IsClientAdmin != 0)"
+                                           disabled="@guardandoRoles.Contains(u.Id)"
+                                           @onchange="e => CambiarRol(u, admin: (bool)e.Value!)" />
+                                </td>
+                                <td class="text-center">
+                                    <input class="form-check-input" type="checkbox"
+                                           checked="@(u.CanVerify != 0)"
+                                           disabled="@guardandoRoles.Contains(u.Id)"
+                                           @onchange="e => CambiarRol(u, verify: (bool)e.Value!)" />
+                                </td>
+                                <td class="text-center">
+                                    <input class="form-check-input" type="checkbox"
+                                           checked="@(u.CanAnnotate != 0)"
+                                           disabled="@guardandoRoles.Contains(u.Id)"
+                                           @onchange="e => CambiarRol(u, annotate: (bool)e.Value!)" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="aviso-box mt-3">
+                <i class="bi bi-info-circle"></i>
+                <span>
+                    Los cambios de permisos rigen cuando la persona vuelva a iniciar
+                    sesión: su token actual sigue teniendo los permisos viejos hasta
+                    30 días.
+                </span>
+            </div>
+            @if (!string.IsNullOrEmpty(errorRoles))
+            {
+                <div class="alert alert-warning mt-3 mb-0">@errorRoles</div>
+            }
+        }
+    </div>
+
+    <!-- ═══════════════════ Invitaciones ═══════════════════ -->
+    <div class="ca-card">
+        <div class="ca-card-header">
+            <span class="ca-icon ca-icon-orange"><i class="bi bi-envelope-plus-fill"></i></span>
+            <h3>Invitaciones</h3>
+        </div>
+
+        <div class="invite-box">
+            <div class="fw-bold mb-2">Invitar a un colega</div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <input class="form-control" style="max-width:320px" type="email"
+                       placeholder="email@empresa.com" @bind="email" />
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="adm" @bind="esAdmin" />
+                    <label class="form-check-label" for="adm">Puede invitar a otros</label>
+                </div>
+                <button class="btn btn-primary" @onclick="Invitar" disabled="@enviando">
+                    @(enviando ? "Creando…" : "Crear invitación")
+                </button>
+            </div>
+
+            @if (creada is not null)
+            {
+                <div class="alert alert-success mt-3 mb-0">
+                    <div class="fw-bold">Invitación para @creada.Email</div>
+                    <div class="small mb-2">
+                        Mandale este link. Sirve una sola vez y vence el @creada.ExpiresAt.
+                        <strong>No se puede volver a ver:</strong> si se pierde,
+                        revocala y creá otra.
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input class="form-control font-monospace small" readonly
+                               value="@creada.Url" id="invite-url" />
+                        <button class="btn btn-sm btn-outline-secondary"
+                                @onclick="CopiarUrl">Copiar</button>
+                    </div>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(errorInvitar))
+            {
+                <div class="alert alert-warning mt-3 mb-0">@errorInvitar</div>
+            }
+        </div>
+
+        <h4 class="h6 mt-4 mb-3">Invitaciones pendientes</h4>
+        @if (cargandoInvitaciones)
+        {
+            <div class="text-center my-4">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        }
+        else if (invitaciones is null || invitaciones.Count == 0)
+        {
+            <div class="inline-empty">
+                <i class="bi bi-envelope-check"></i>
+                <span>No hay invitaciones pendientes.</span>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover portal-table align-middle">
+                    <thead>
+                        <tr><th>Email</th><th>Vence</th><th>Invitó</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var i in invitaciones)
+                        {
+                            <tr>
+                                <td>
+                                    @i.Email
+                                    @if (i.IsAdmin)
+                                    {
+                                        <span class="badge bg-secondary ms-2">admin</span>
+                                    }
+                                </td>
+                                <td class="small">@i.ExpiresAt</td>
+                                <td class="small text-muted-soft">@(i.InvitadoPor ?? "—")</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            @onclick="() => Revocar(i.Id)">Revocar</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <!-- ═══════════════════ Campos ═══════════════════ -->
+    <div class="ca-card">
+        <div class="ca-card-header">
+            <span class="ca-icon ca-icon-green"><i class="bi bi-card-list"></i></span>
+            <h3>Campos</h3>
+            @if (columnas is not null && columnas.Count > 0)
+            {
+                <span class="header-count">@columnas.Count</span>
+            }
+        </div>
+
+        <div class="invite-box">
+            <div class="fw-bold mb-2">Nuevo campo</div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <input class="form-control" style="max-width:320px" type="text"
+                       placeholder="Nombre del campo" @bind="nombreColumna" />
+                <button class="btn btn-primary" @onclick="CrearColumna" disabled="@creandoColumna">
+                    @(creandoColumna ? "Creando…" : "Crear campo")
+                </button>
+            </div>
+            @if (!string.IsNullOrEmpty(errorColumna))
+            {
+                <div class="alert alert-warning mt-3 mb-0">@errorColumna</div>
+            }
+        </div>
+
+        @if (cargandoColumnas)
+        {
+            <div class="text-center my-4">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        }
+        else if (columnas is null || columnas.Count == 0)
+        {
+            <div class="inline-empty">
+                <i class="bi bi-card-list"></i>
+                <span>Todavía no hay campos propios cargados.</span>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive mt-3">
+                <table class="table table-hover portal-table align-middle">
+                    <thead>
+                        <tr><th>Campo</th><th>Tipo</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in columnas)
+                        {
+                            <tr>
+                                <td><strong>@c.ColumnName</strong></td>
+                                <td class="text-muted-soft">@c.DataType</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            @onclick="() => ConfirmarBorrarColumna(c)">
+                                        Borrar
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // ── Usuarios / roles ──────────────────────────────────────────────
+    private List<UsuarioClienteDto>? usuarios;
+    private bool cargandoUsuarios = true;
+    private readonly HashSet<int> guardandoRoles = new();
+    private string errorRoles = "";
+
+    // ── Invitaciones ──────────────────────────────────────────────────
+    private List<InvitacionDto>? invitaciones;
+    private InvitacionCreadaDto? creada;
+    private bool cargandoInvitaciones = true, enviando, esAdmin;
+    private string email = "", errorInvitar = "";
+
+    // ── Campos ────────────────────────────────────────────────────────
+    private List<ColumnaClienteDto>? columnas;
+    private bool cargandoColumnas = true, creandoColumna;
+    private string nombreColumna = "", errorColumna = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(CargarUsuarios(), CargarInvitaciones(), CargarColumnas());
+    }
+
+    // ── Usuarios / roles ──────────────────────────────────────────────
+
+    private async Task CargarUsuarios()
+    {
+        cargandoUsuarios = true;
+        usuarios = await Portal.GetUsuariosAsync();
+        cargandoUsuarios = false;
+        StateHasChanged();
+    }
+
+    private async Task CambiarRol(
+        UsuarioClienteDto u, bool? admin = null, bool? verify = null, bool? annotate = null)
+    {
+        errorRoles = "";
+        var nuevoAdmin = admin ?? u.IsClientAdmin != 0;
+        var nuevoVerify = verify ?? u.CanVerify != 0;
+        var nuevoAnnotate = annotate ?? u.CanAnnotate != 0;
+
+        guardandoRoles.Add(u.Id);
+        var ok = await Portal.SetRolesAsync(u.Id, nuevoAdmin, nuevoVerify, nuevoAnnotate);
+        guardandoRoles.Remove(u.Id);
+
+        if (ok)
+        {
+            u.IsClientAdmin = nuevoAdmin ? 1 : 0;
+            u.CanVerify = nuevoVerify ? 1 : 0;
+            u.CanAnnotate = nuevoAnnotate ? 1 : 0;
+        }
+        else
+        {
+            errorRoles = $"No se pudo actualizar el rol de {u.Email}.";
+        }
+    }
+
+    // ── Invitaciones ──────────────────────────────────────────────────
+
+    private async Task CargarInvitaciones()
+    {
+        cargandoInvitaciones = true;
+        invitaciones = await Portal.GetInvitacionesAsync();
+        cargandoInvitaciones = false;
+        StateHasChanged();
+    }
+
+    private async Task Invitar()
+    {
+        errorInvitar = ""; creada = null;
+        if (string.IsNullOrWhiteSpace(email)) { errorInvitar = "Poné un email."; return; }
+        enviando = true;
+        creada = await Portal.InvitarAsync(email, esAdmin);
+        enviando = false;
+        if (creada is null) { errorInvitar = "No se pudo crear la invitación."; return; }
+        email = ""; esAdmin = false;
+        await CargarInvitaciones();
+    }
+
+    private async Task Revocar(int id)
+    {
+        if (await Portal.RevocarInvitacionAsync(id)) await CargarInvitaciones();
+        else errorInvitar = "No se pudo revocar.";
+    }
+
+    private async Task CopiarUrl()
+        => await JS.InvokeVoidAsync("navigator.clipboard.writeText", creada!.Url);
+
+    // ── Campos ────────────────────────────────────────────────────────
+
+    private async Task CargarColumnas()
+    {
+        cargandoColumnas = true;
+        columnas = await Portal.GetColumnasAsync();
+        cargandoColumnas = false;
+        StateHasChanged();
+    }
+
+    private async Task CrearColumna()
+    {
+        errorColumna = "";
+        if (string.IsNullOrWhiteSpace(nombreColumna)) { errorColumna = "Poné un nombre."; return; }
+        creandoColumna = true;
+        var ok = await Portal.CrearColumnaAsync(nombreColumna.Trim());
+        creandoColumna = false;
+        if (!ok) { errorColumna = "Ya existe un campo con ese nombre."; return; }
+        nombreColumna = "";
+        await CargarColumnas();
+    }
+
+    private async Task ConfirmarBorrarColumna(ColumnaClienteDto c)
+    {
+        errorColumna = "";
+        var confirmado = await JS.InvokeAsync<bool>("confirm",
+            $"¿Borrar el campo \"{c.ColumnName}\"? Esto también borra todos los " +
+            "valores cargados en ese campo, en todos los animales. No se puede deshacer.");
+        if (!confirmado) return;
+
+        if (await Portal.BorrarColumnaAsync(c.Id)) await CargarColumnas();
+        else errorColumna = "No se pudo borrar el campo.";
+    }
+}
+
+<style>
+    .page-container {
+        padding: 25px;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 22px;
+    }
+
+    .page-header h1 {
+        color: var(--text-primary);
+        font-size: 32px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin: 0;
+    }
+
+    /* ── Tarjetas de sección ───────────────────────────────── */
+    .ca-card {
+        background: var(--card-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 18px 18px 16px;
+        margin-bottom: 20px;
+    }
+
+    .ca-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .ca-card-header h3 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: 0.4px;
+        color: var(--text-primary);
+    }
+
+    .header-count {
+        margin-left: auto;
+        background: var(--surface-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: 20px;
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 800;
+        padding: 2px 10px;
+    }
+
+    .ca-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: white;
+        font-size: 18px;
+    }
+
+    .ca-icon-green { background: var(--primary-green); }
+    .ca-icon-orange { background: var(--warning); }
+
+    /* ── Tabla ─────────────────────────────────────────────── */
+    .table-responsive {
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        overflow: hidden;
+    }
+
+    .portal-table {
+        margin-bottom: 0;
+    }
+
+    .portal-table tbody tr:last-child td {
+        border-bottom: none !important;
+    }
+
+    .text-muted-soft {
+        color: var(--text-secondary) !important;
+        font-size: 13px;
+    }
+
+    /* ── Estado vacío en línea ─────────────────────────────── */
+    .inline-empty {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text-secondary);
+        background: var(--surface-bg);
+        border: 1.5px dashed var(--border-color);
+        border-radius: var(--border-radius-sm);
+        padding: 16px 18px;
+        font-weight: 600;
+    }
+
+    .inline-empty i {
+        font-size: 18px;
+    }
+
+    /* ── Aviso (permisos) ──────────────────────────────────── */
+    .aviso-box {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        color: var(--text-secondary);
+        background: var(--surface-bg);
+        border: 1.5px solid var(--border-color);
+        border-left: 4px solid var(--warning);
+        border-radius: var(--border-radius-sm);
+        padding: 12px 16px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .aviso-box i {
+        color: var(--warning);
+        font-size: 16px;
+        margin-top: 1px;
+    }
+
+    /* ── Bloque de formulario dentro de la tarjeta ─────────── */
+    .invite-box {
+        background: var(--surface-bg);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        padding: 14px 16px;
+        margin-bottom: 6px;
+    }
+</style>

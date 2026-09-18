@@ -109,4 +109,26 @@ public class ClientPortalService
         var r = await _apiClient.DeleteAsync($"/api/v1/clientes/invitaciones/{id}");
         return r.IsSuccessStatusCode;
     }
+
+    // ── Campos custom (columnas) ─────────────────────────────────────────
+
+    public async Task<List<ColumnaClienteDto>?> GetColumnasAsync()
+        => await _apiClient.GetAsync<List<ColumnaClienteDto>>("/api/v1/clientes/columnas");
+
+    public async Task<bool> CrearColumnaAsync(string nombre)
+        => (await _apiClient.PostAsync("/api/v1/clientes/columnas",
+                new { column_name = nombre })).IsSuccessStatusCode;
+
+    public async Task<bool> BorrarColumnaAsync(int id)
+        => (await _apiClient.DeleteAsync($"/api/v1/clientes/columnas/{id}")).IsSuccessStatusCode;
+
+    // ── Usuarios y roles ──────────────────────────────────────────────────
+
+    public async Task<List<UsuarioClienteDto>?> GetUsuariosAsync()
+        => await _apiClient.GetAsync<List<UsuarioClienteDto>>("/api/v1/clientes/usuarios");
+
+    public async Task<bool> SetRolesAsync(int userId, bool admin, bool verify, bool annotate)
+        => (await _apiClient.PutAsync($"/api/v1/clientes/usuarios/{userId}/roles",
+                new { is_client_admin = admin, can_verify = verify,
+                      can_annotate = annotate })).IsSuccessStatusCode;
 }
