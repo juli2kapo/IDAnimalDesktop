@@ -1,5 +1,6 @@
 @page "/cliente"
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using System.Globalization
 @using IdAnimal.Shared.DTOs.Clientes
 @using IdAnimal.Web.Services
 @inject ClientPortalService Portal
@@ -42,10 +43,42 @@
                 </div>
             </div>
             <div class="stat-card">
-                <span class="ca-icon ca-icon-orange"><i class="bi bi-shield-check"></i></span>
+                <span class="ca-icon ca-icon-orange"><i class="bi bi-speedometer2"></i></span>
                 <div class="stat-body">
-                    <div class="stat-label">Verificaciones (30 días)</div>
-                    <div class="stat-value">@(datos?.Verificaciones30d ?? 0)</div>
+                    <div class="stat-label">Peso promedio</div>
+                    <div class="stat-value">@FormatKg(datos?.PesoPromedio)</div>
+                    @if (datos is { AnimalesConPeso: > 0 })
+                    {
+                        <div class="stat-caption">promedio sobre @datos.AnimalesConPeso animal@(datos.AnimalesConPeso == 1 ? "" : "es")</div>
+                    }
+                    else
+                    {
+                        <div class="stat-caption">sin datos de peso</div>
+                    }
+                </div>
+            </div>
+            <div class="stat-card">
+                <span class="ca-icon ca-icon-orange"><i class="bi bi-basket3-fill"></i></span>
+                <div class="stat-body">
+                    <div class="stat-label">Peso total</div>
+                    <div class="stat-value">@FormatKg(datos?.PesoTotal)</div>
+                    @{
+                        var faltantes = (datos?.Animales ?? 0) - (datos?.AnimalesConPeso ?? 0);
+                    }
+                    @if (datos is { AnimalesConPeso: > 0 })
+                    {
+                        <div class="stat-caption">
+                            suma sobre @datos.AnimalesConPeso animal@(datos.AnimalesConPeso == 1 ? "" : "es")
+                            @if (faltantes > 0)
+                            {
+                                <text> · @faltantes sin peso</text>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="stat-caption">sin datos de peso</div>
+                    }
                 </div>
             </div>
         </div>
@@ -89,6 +122,17 @@
         if (string.IsNullOrWhiteSpace(busqueda)) return;
         Nav.NavigateTo($"/animales?q={Uri.EscapeDataString(busqueda)}");
     }
+
+    /// <summary>
+    /// Formatea un peso en kg para lectura humana. Null (ningún animal con peso
+    /// cargado) se muestra como "—", nunca como "0 kg" — decir que el rodeo pesa
+    /// cero es engañoso.
+    /// </summary>
+    private static string FormatKg(double? valor)
+    {
+        if (valor is null) return "—";
+        return $"{valor.Value.ToString("N0", CultureInfo.InvariantCulture)} kg";
+    }
 }
 
 <style>
@@ -129,7 +173,7 @@
     /* ── Tarjetas de contador ──────────────────────────────── */
     .stat-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 18px;
         margin-bottom: 22px;
     }
@@ -162,6 +206,14 @@
         font-size: 34px;
         font-weight: 900;
         line-height: 1.1;
+    }
+
+    .stat-caption {
+        color: var(--text-secondary);
+        font-size: 11.5px;
+        font-weight: 600;
+        margin-top: 2px;
+        white-space: normal;
     }
 
     /* Mismo lenguaje de "chip de icono" que la ficha del animal. */
@@ -219,7 +271,13 @@
         margin: 10px 0 0;
     }
 
-    @@media (max-width: 900px) {
+    @@media (max-width: 1100px) {
+        .stat-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 560px) {
         .stat-grid {
             grid-template-columns: 1fr;
         }
