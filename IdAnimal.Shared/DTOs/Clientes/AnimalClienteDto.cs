@@ -30,6 +30,11 @@ public class AnimalClienteDto
 
     /// Cantidad de imagenes de la ficha (`image_count`).
     public int ImageCount { get; set; }
+
+    /// Campos propios del cliente sobre este animal, keyeados por NOMBRE de
+    /// columna (`datos_cliente`). El PUT de guardado, en cambio, va keyeado
+    /// por ID de columna: hay que cruzar con GetColumnasAsync para mapear.
+    public Dictionary<string, string>? DatosCliente { get; set; }
 }
 
 /// Una imagen del album. El backend devuelve las filas crudas de

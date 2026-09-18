@@ -122,6 +122,13 @@ public class ClientPortalService
     public async Task<bool> BorrarColumnaAsync(int id)
         => (await _apiClient.DeleteAsync($"/api/v1/clientes/columnas/{id}")).IsSuccessStatusCode;
 
+    /// Guarda los valores de los campos propios sobre un animal. `valores` va
+    /// keyeado por ID de columna (no por nombre): el llamador tiene que cruzar
+    /// contra GetColumnasAsync para armar ese diccionario.
+    public async Task<bool> AnotarAnimalAsync(string globalId, Dictionary<int, string> valores)
+        => (await _apiClient.PutAsync($"/api/v1/clientes/animales/{globalId}/datos",
+                new { valores })).IsSuccessStatusCode;
+
     // ── Usuarios y roles ──────────────────────────────────────────────────
 
     public async Task<List<UsuarioClienteDto>?> GetUsuariosAsync()

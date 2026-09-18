@@ -1,7 +1,9 @@
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using Microsoft.AspNetCore.Components.Authorization
 @using IdAnimal.Shared.DTOs.Clientes
 @using IdAnimal.Web.Services
 @inject ClientPortalService Portal
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>@(animal?.Caravan ?? "Animal") — IdAnimal</PageTitle>
 
@@ -39,9 +41,12 @@
                     }
                 </div>
             </div>
-            <button class="btn btn-primary" @onclick="() => mostrarVerificar = true">
-                <i class="bi bi-shield-check"></i> Verificar identidad
-            </button>
+            @if (puedeVerificar)
+            {
+                <button class="btn btn-primary" @onclick="() => mostrarVerificar = true">
+                    <i class="bi bi-shield-check"></i> Verificar identidad
+                </button>
+            }
         </div>
 
         <div class="detalle-layout">
@@ -86,6 +91,77 @@
                     <dd>@(string.IsNullOrWhiteSpace(animal.Renspa) ? "—" : animal.Renspa)</dd>
                 </dl>
             </div>
+        </div>
+
+        <!-- Datos de tu organización -->
+        <div class="ca-card">
+            <div class="ca-card-header">
+                <span class="ca-icon ca-icon-orange"><i class="bi bi-building-gear"></i></span>
+                <h3>Datos de tu organización</h3>
+                @if (columnas is not null && columnas.Count > 0)
+                {
+                    <span class="header-count">@columnas.Count</span>
+                }
+            </div>
+
+            @if (cargandoColumnas)
+            {
+                <div class="text-center my-4">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                </div>
+            }
+            else if (columnas is null || columnas.Count == 0)
+            {
+                <div class="inline-empty">
+                    <i class="bi bi-card-list"></i>
+                    <span>
+                        Tu organización todavía no definió campos propios.
+                        @if (esAdmin)
+                        {
+                            <text> Se crean en </text><a href="/organizacion">Organización</a><text>.</text>
+                        }
+                        else
+                        {
+                            <text> Pedile a un administrador de tu organización que los cree.</text>
+                        }
+                    </span>
+                </div>
+            }
+            else if (puedeAnotar)
+            {
+                <dl class="data-list">
+                    @foreach (var c in columnas)
+                    {
+                        <dt>@c.ColumnName</dt>
+                        <dd>
+                            <input class="form-control form-control-sm" type="text"
+                                   value="@ValorEditado(c.Id)"
+                                   @oninput="e => valoresEditados[c.Id] = e.Value?.ToString() ?? string.Empty" />
+                        </dd>
+                    }
+                </dl>
+                <div class="d-flex justify-content-end align-items-center gap-2 mt-3">
+                    @if (!string.IsNullOrEmpty(errorDatos))
+                    {
+                        <span class="text-danger small me-auto">@errorDatos</span>
+                    }
+                    <button class="btn btn-primary btn-sm" @onclick="GuardarDatos" disabled="@guardandoDatos">
+                        @(guardandoDatos ? "Guardando…" : "Guardar")
+                    </button>
+                </div>
+            }
+            else
+            {
+                <dl class="data-list">
+                    @foreach (var c in columnas)
+                    {
+                        <dt>@c.ColumnName</dt>
+                        <dd>@ValorTexto(c.ColumnName)</dd>
+                    }
+                </dl>
+            }
         </div>
 
         @* Galería: sólo si hay algo más allá de la foto principal. *@
@@ -206,6 +282,28 @@
     private bool mostrarVerificar;
     private string? imagenAmpliada;
 
+    // ── Datos de la organización (campos propios) ───────────────────────
+    private List<ColumnaClienteDto>? columnas;
+    private bool cargandoColumnas = true, guardandoDatos;
+    private string errorDatos = "";
+    private readonly Dictionary<int, string> valoresEditados = new();
+
+    // ── Permisos ──────────────────────────────────────────────────────
+    // Los claims `can_verify` y `can_annotate` son NUEVOS: los tokens
+    // emitidos antes de este trabajo no los traen.
+    //   - can_verify: la verificación YA existía en el portal. Si la
+    //     ausencia del claim ocultara el botón, cualquier usuario con un
+    //     token viejo perdería una función que ya tenía, en silencio.
+    //     Ausencia => PERMITIDO. Sólo "false" explícito lo oculta.
+    //   - can_annotate: anotar es una función NUEVA. Nadie la tenía antes,
+    //     así que no hay nada que preservar; si la ausencia habilitara el
+    //     formulario, un token viejo mostraría un formulario que el
+    //     backend rechaza con 403. Ausencia => NO permitido.
+    // Mismo patrón que el claim `typ` ausente = productor en Animales.razor.
+    private bool puedeVerificar = true;
+    private bool puedeAnotar;
+    private bool esAdmin;
+
     /// URLs absolutas de las imágenes de la ficha. El backend puede devolver
     /// rutas relativas ("/static/images/..."), que el navegador cargaría desde
     /// el host del portal y no del API: por eso pasan por ApiUrl.Resolve.
@@ -219,13 +317,40 @@
 
     private string? FotoPrincipal => Galeria.FirstOrDefault();
 
-    protected override async Task OnInitializedAsync() => await Cargar();
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        var claimVerify = state.User.FindFirst("can_verify")?.Value;
+        var claimAnnotate = state.User.FindFirst("can_annotate")?.Value;
+        var claimAdmin = state.User.FindFirst("is_client_admin")?.Value;
+
+        // Ausencia = permitido para can_verify (feature vieja).
+        puedeVerificar = !string.Equals(claimVerify, "false", StringComparison.OrdinalIgnoreCase);
+        // Ausencia = NO permitido para can_annotate (feature nueva).
+        puedeAnotar = string.Equals(claimAnnotate, "true", StringComparison.OrdinalIgnoreCase);
+        esAdmin = string.Equals(claimAdmin, "true", StringComparison.OrdinalIgnoreCase);
+
+        // Admin siempre puede verificar/anotar, incluso si por algún motivo
+        // esos claims puntuales no vinieran en "true".
+        if (esAdmin) { puedeVerificar = true; puedeAnotar = true; }
+
+        await Task.WhenAll(Cargar(), CargarColumnas());
+    }
 
     private async Task Cargar()
     {
         cargando = true;
         animal = await Portal.GetAnimalAsync(GlobalId);
         cargando = false;
+        StateHasChanged();
+    }
+
+    private async Task CargarColumnas()
+    {
+        cargandoColumnas = true;
+        columnas = await Portal.GetColumnasAsync();
+        cargandoColumnas = false;
+        StateHasChanged();
     }
 
     private void AbrirImagen(string url) => imagenAmpliada = url;
@@ -236,6 +361,41 @@
     {
         mostrarVerificar = false;
         // Recargar para que la verificación recién hecha aparezca en el historial.
+        await Cargar();
+    }
+
+    /// Valor actual del campo por NOMBRE (lectura), tal como llega en
+    /// `datos_cliente`. Vacío si el animal no tiene ese campo cargado.
+    private string ValorTexto(string columnName)
+        => animal?.DatosCliente is not null && animal.DatosCliente.TryGetValue(columnName, out var v)
+            ? (string.IsNullOrWhiteSpace(v) ? "—" : v)
+            : "—";
+
+    /// Valor para el input editable, por ID de columna. La primera vez que se
+    /// pinta cada campo se precarga desde `datos_cliente` (por nombre);
+    /// después de eso manda lo que la persona tipeó.
+    private string ValorEditado(int columnId)
+    {
+        if (valoresEditados.TryGetValue(columnId, out var editado)) return editado;
+        var nombre = columnas?.FirstOrDefault(c => c.Id == columnId)?.ColumnName;
+        var inicial = nombre is not null && animal?.DatosCliente is not null &&
+                      animal.DatosCliente.TryGetValue(nombre, out var v) ? v : string.Empty;
+        valoresEditados[columnId] = inicial;
+        return inicial;
+    }
+
+    private async Task GuardarDatos()
+    {
+        errorDatos = "";
+        guardandoDatos = true;
+        var ok = await Portal.AnotarAnimalAsync(GlobalId, valoresEditados);
+        guardandoDatos = false;
+        if (!ok)
+        {
+            errorDatos = "No se pudieron guardar los datos.";
+            return;
+        }
+        valoresEditados.Clear();
         await Cargar();
     }
 
