@@ -82,7 +82,12 @@ main {
     .top-row {
         position: sticky;
         top: 0;
-        z-index: 1;
+        /* z-index alto: la barra es sticky, así que cualquier elemento de la
+           página con `position` propio (la hero de la landing es `relative`)
+           se le monta encima al hacer scroll y le tapa el título. Con 1 no
+           alcanzaba: basta que el contenido tenga su propio contexto de
+           apilamiento. */
+        z-index: 1030;
     }
 
     .top-row.auth ::deep a:first-child {

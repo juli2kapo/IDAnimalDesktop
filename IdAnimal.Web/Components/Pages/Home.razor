@@ -393,9 +393,16 @@ else if (!isClientUser)
 @code {
     private bool isReady = false;
     private bool isClientUser = false;
+    private bool yaRedirigido = false;
 
     protected override async Task OnInitializedAsync()
     {
+        // OJO: en una página prerenderizada esto corre DOS veces — una del lado
+        // del servidor y otra cuando conecta el circuito interactivo. Sin la
+        // guarda, el NavigateTo se dispara dos veces y la página "se refresca
+        // sola" a ojos del usuario, que es justo lo que reportó.
+        if (yaRedirigido) return;
+
         var state = await AuthStateProvider.GetAuthenticationStateAsync();
         var tipo = state.User.Identity?.IsAuthenticated == true
             ? state.User.FindFirst("typ")?.Value
@@ -405,6 +412,7 @@ else if (!isClientUser)
         {
             // Usuario de aseguradora: su home es el dashboard de cliente, no la
             // landing de productor. Redirect en vez de duplicar el markup.
+            yaRedirigido = true;
             Navigation.NavigateTo("/cliente", replace: true);
             return;
         }
