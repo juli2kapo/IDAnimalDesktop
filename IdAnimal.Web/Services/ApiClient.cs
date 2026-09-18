@@ -102,13 +102,28 @@ public class ApiClient
 
     private async Task HandleUnauthorizedAsync()
     {
-        await _authStateProvider.LogoutAsync();
-
-        // Evitar loop de redirección si ya estamos en /login.
-        var relativePath = _navigation.ToBaseRelativePath(_navigation.Uri);
-        if (!relativePath.StartsWith("login", StringComparison.OrdinalIgnoreCase))
+        // `LogoutAsync` borra el token de ProtectedLocalStorage, que es JS
+        // interop. Durante el PRERENDER estático todavía no hay circuito, y el
+        // interop tira `InvalidOperationException` → la página entera muere con
+        // un 500. Pasaba justo en el caso más común: una request sin sesión que
+        // recibe 401 mientras se prerenderiza.
+        //
+        // Ahí no hay nada que limpiar (nunca hubo sesión) ni a dónde navegar:
+        // se ignora y el circuito interactivo resolverá el estado al conectar.
+        try
         {
-            _navigation.NavigateTo("/login", forceLoad: false);
+            await _authStateProvider.LogoutAsync();
+
+            // Evitar loop de redirección si ya estamos en /login.
+            var relativePath = _navigation.ToBaseRelativePath(_navigation.Uri);
+            if (!relativePath.StartsWith("login", StringComparison.OrdinalIgnoreCase))
+            {
+                _navigation.NavigateTo("/login", forceLoad: false);
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            // Prerender sin circuito: no se puede tocar el storage ni navegar.
         }
     }
 }
