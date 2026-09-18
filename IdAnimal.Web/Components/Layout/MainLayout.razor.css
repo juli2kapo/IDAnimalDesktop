@@ -19,7 +19,7 @@ main {
     border-bottom: 3px solid var(--primary-green);
     color: white;
     justify-content: flex-end;
-    height: 3.75rem;
+    height: 4.25rem;
     display: flex;
     align-items: center;
 }

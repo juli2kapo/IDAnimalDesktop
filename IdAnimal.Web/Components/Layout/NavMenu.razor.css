@@ -15,20 +15,79 @@
     background-color: rgba(255, 255, 255, 0.4);
 }
 
-/* Top row del sidebar (logo IDANIMAL) — verde oscuro como app bar del teléfono */
+/* ── Cabecera de marca ────────────────────────────────────────────
+   Mismo lockup que la barra de estado del teléfono (ble_status_bar.dart):
+   logo + "IDANIMAL" en blanco sobre verde oscuro. El naranja del logo
+   (#F43A00) es el único color cálido de todo el chrome: que resalte
+   contra el verde es deliberado, no accidental. */
 .top-row {
-    min-height: 3.75rem;
+    min-height: 4.25rem;
     background-color: var(--green-dark);
-    border-bottom: 3px solid var(--primary-green);
+    border-bottom: 3px solid var(--brand-orange);
     box-shadow: var(--shadow);
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.top-row .container-fluid {
+    padding-left: 0;
+    padding-right: 0;
 }
 
 .navbar-brand {
-    font-size: 1.35rem !important;
-    font-weight: 900 !important;
-    letter-spacing: 2.5px;
-    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0 !important;
+    margin: 0 !important;
     color: white !important;
+    text-decoration: none;
+}
+
+/* El logo es vertical (183x242). A 36px de alto ocupa ~27px de ancho:
+   entra cómodo en la barra sin apretar el texto. */
+.brand-logo {
+    height: 36px;
+    width: auto;
+    display: block;
+    flex-shrink: 0;
+}
+
+.brand-lockup {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    line-height: 1.1;
+}
+
+.brand-name {
+    font-size: 1.15rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: white;
+}
+
+/* Diferencia los dos portales sin romper el lockup compartido. */
+.brand-role {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: rgba(255, 255, 255, 0.72);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.navbar-brand:hover .brand-name,
+.navbar-brand:focus-visible .brand-name {
+    color: white;
+}
+
+.navbar-brand:focus-visible {
+    outline: 2px solid var(--brand-orange);
+    outline-offset: 3px;
+    border-radius: var(--border-radius-sm);
 }
 
 /* Iconos: hechos en marrón oscuro para que contrasten con el sidebar crema.
@@ -94,48 +153,68 @@
             mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='black' viewBox='0 0 16 16'%3E%3Cpath d='M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z'/%3E%3Cpath d='M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319z'/%3E%3C/svg%3E");
 }
 
-.nav-item {
-    font-size: 0.95rem;
-    padding: 0 0.6rem;
-    margin-bottom: 0.35rem;
+/* ── Ítems de navegación ──────────────────────────────────────────
+   Barra naranja a la izquierda para el ítem activo: el color de marca
+   marca "estás acá". Es la única repetición del naranja en el sidebar. */
+.nav {
+    padding: 0.75rem 0;
 }
 
-    .nav-item:first-of-type {
-        padding-top: 1rem;
-    }
+.nav-item {
+    font-size: 0.95rem;
+    padding: 0 0.75rem;
+    margin-bottom: 0.15rem;
+}
 
-    .nav-item:last-of-type {
-        padding-bottom: 1rem;
-    }
-
-    .nav-item ::deep .nav-link {
-        color: var(--text-secondary);
-        background: none;
-        border: 1.5px solid transparent;
-        border-radius: var(--border-radius-sm);
-        height: 2.85rem;
-        display: flex;
-        align-items: center;
-        line-height: 2.85rem;
-        width: 100%;
-        padding: 0 0.85rem;
-        font-weight: 700;
-        letter-spacing: 0.4px;
-        text-transform: uppercase;
-        font-size: 0.85rem;
-        transition: all 0.15s;
-    }
-
-.nav-item ::deep a.active {
-    background-color: var(--green-light);
-    color: var(--green-dark);
-    border-color: var(--primary-green);
+.nav-item ::deep .nav-link {
+    position: relative;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    min-height: 2.6rem;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0 0.75rem 0 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    font-size: 0.82rem;
+    transition: background-color 0.12s ease, color 0.12s ease;
 }
 
 .nav-item ::deep .nav-link:hover {
     background-color: var(--hover-bg);
     color: var(--green-dark);
-    border-color: var(--border-color);
+}
+
+.nav-item ::deep a.active {
+    background-color: var(--green-light);
+    color: var(--green-dark);
+}
+
+/* Rail de marca del ítem activo. */
+.nav-item ::deep a.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.3rem;
+    bottom: 0.3rem;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    background-color: var(--brand-orange);
+}
+
+.nav-item ::deep .nav-link:focus-visible {
+    outline: 2px solid var(--primary-green);
+    outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-item ::deep .nav-link {
+        transition: none;
+    }
 }
 
 .nav-scrollable {
@@ -154,7 +233,7 @@
 
     .nav-scrollable {
         display: block;
-        height: calc(100vh - 3.75rem);
+        height: calc(100vh - 4.25rem);
         overflow-y: auto;
     }
 }

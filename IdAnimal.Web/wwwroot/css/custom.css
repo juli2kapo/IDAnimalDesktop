@@ -27,6 +27,11 @@
     --green-dark: #2E4A28;
     --green-light: #D4E8CE;
 
+    /* Naranja de marca — tomado del logo (logo.png, #F43A00).
+       Es el color del isotipo; se usa sólo en el chrome de marca
+       (cabecera del sidebar e ítem activo), no como color de estado. */
+    --brand-orange: #F43A00;
+
     /* Estados */
     --warning: #D4700A;          /* naranja tierra (sólo avisos) */
     --danger:  #8B2020;          /* rojo oscuro */
