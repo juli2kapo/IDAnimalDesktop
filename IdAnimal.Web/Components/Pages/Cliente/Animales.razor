@@ -4,7 +4,6 @@
 @using Microsoft.AspNetCore.WebUtilities
 @inject ClientPortalService Portal
 @inject NavigationManager Nav
-@inject IJSRuntime JS
 
 <PageTitle>Animales — IdAnimal</PageTitle>
 
@@ -76,7 +75,7 @@
                         <th class="th-foto">Foto</th>
                         <th>Electrónica</th>
                         <th>Caravana</th>
-                        <th class="th-id">ID</th>
+                        <th>ID</th>
                         <th>Productor</th>
                         <th>Establecimiento</th>
                         <th>Provincia</th>
@@ -106,15 +105,11 @@
                             </td>
                             <td><strong class="eid-cell">@(string.IsNullOrWhiteSpace(a.Eid) ? "—" : a.Eid)</strong></td>
                             <td class="mono-cell">@CaravanaMostrada(a)</td>
-                            <td class="mono-cell">
-                                <span class="id-cell" title="@a.GlobalId">@TruncarId(a.GlobalId)</span>
-                                <button type="button" class="id-copy-btn" title="Copiar ID completo"
-                                        aria-label="Copiar ID completo"
-                                        @onclick="() => CopiarId(a.GlobalId)"
-                                        @onclick:stopPropagation="true">
-                                    <i class="bi @(idCopiado == a.GlobalId ? "bi-check-lg" : "bi-clipboard")"></i>
-                                </button>
-                            </td>
+                            @* El id va completo y con el mismo formato que
+                               Productor/Establecimiento: sin monoespaciada, sin
+                               recorte y sin botón de copiar. Recortado no servía
+                               para lo único que se usa — copiarlo a otro sistema. *@
+                            <td>@(string.IsNullOrWhiteSpace(a.GlobalId) ? "—" : a.GlobalId)</td>
                             <td>@(string.IsNullOrWhiteSpace(a.Productor) ? "—" : a.Productor)</td>
                             <td>@(string.IsNullOrWhiteSpace(a.Establecimiento) ? "—" : a.Establecimiento)</td>
                             <td>@(string.IsNullOrWhiteSpace(a.Provincia) ? "—" : a.Provincia)</td>
@@ -149,10 +144,6 @@
     private string q = string.Empty;
     private int pagina = 1;
     private int? productorId;
-
-    /// GlobalId recién copiado, para mostrar el tilde de confirmación en su
-    /// fila. Un solo campo alcanza: copiar otro id reemplaza al anterior.
-    private string? idCopiado;
 
     private int TotalPaginas => datos is null || datos.PageSize == 0
         ? 1
@@ -204,35 +195,6 @@
         return string.Equals(caravan, eid, StringComparison.Ordinal) ? "-" : caravan;
     }
 
-    /// Trunca el GlobalId (32 hex) a un preview corto para que no domine la
-    /// fila. El valor completo queda en el atributo title y detrás del botón
-    /// de copiar.
-    private static string TruncarId(string globalId)
-        => string.IsNullOrEmpty(globalId) || globalId.Length <= 8
-            ? globalId
-            : globalId[..8] + "…";
-
-    /// Copia el GlobalId completo al portapapeles vía JS interop (con
-    /// fallback execCommand para contextos no seguros — ver site.js).
-    private async Task CopiarId(string globalId)
-    {
-        await JS.InvokeVoidAsync("copiarAlPortapapeles", globalId);
-        idCopiado = globalId;
-        StateHasChanged();
-        _ = ResetCopiadoAsync(globalId);
-    }
-
-    /// Vuelve el ícono del botón a su estado normal 1.5s después de copiar,
-    /// mismo tiempo que usa el fallback de PublicAnimal.razor.
-    private async Task ResetCopiadoAsync(string globalId)
-    {
-        await Task.Delay(1500);
-        if (idCopiado == globalId)
-        {
-            idCopiado = null;
-            StateHasChanged();
-        }
-    }
 }
 
 <style>
@@ -375,10 +337,7 @@
         width: 72px;
     }
 
-    .th-id {
-        width: 1%;
-        white-space: nowrap;
-    }
+    
 
     /* La miniatura y el marcador comparten medidas: una fila sin foto ocupa
        exactamente lo mismo que una con foto. */
@@ -414,35 +373,13 @@
         color: var(--text-secondary);
     }
 
-    .id-cell {
-        cursor: default;
-    }
+    
 
-    .id-copy-btn {
-        background: transparent;
-        border: 1.5px solid transparent;
-        border-radius: var(--border-radius-sm);
-        color: var(--text-hint);
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        margin-left: 6px;
-        padding: 3px 5px;
-        font-size: 12px;
-        line-height: 1;
-        vertical-align: middle;
-    }
+    
 
-    .id-copy-btn:hover {
-        background: var(--surface-bg);
-        border-color: var(--border-color);
-        color: var(--primary-green);
-    }
+    
 
-    .id-copy-btn .bi-check-lg {
-        color: var(--primary-green);
-    }
+    
 
     /* ── Paginado ──────────────────────────────────────────── */
     .pagination-container {
