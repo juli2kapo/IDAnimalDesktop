@@ -12,13 +12,16 @@
    así que la forma alcanza para decidir sin ambigüedad — no hace falta
    mirar el claim `typ` acá. *@
 
+@* OJO con el @: sin él, Razor pasa la cadena LITERAL ("Id") en vez del valor
+   del parámetro. Eso hacía que la ficha pidiera /clientes/animales/Id → 404 →
+   "No se encontró el animal" sobre un animal que sí existe. *@
 @if (int.TryParse(Id, out var cattleId))
 {
-    <IdAnimal.Web.Components.Pages.CattleDetail Id="cattleId" />
+    <IdAnimal.Web.Components.Pages.CattleDetail Id="@cattleId" />
 }
 else
 {
-    <IdAnimal.Web.Components.Pages.Cliente.AnimalDetalle GlobalId="Id" />
+    <IdAnimal.Web.Components.Pages.Cliente.AnimalDetalle GlobalId="@Id" />
 }
 
 @code {
