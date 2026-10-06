@@ -29,8 +29,9 @@ public class ApiClient
 
     public async Task<T?> GetAsync<T>(string endpoint)
     {
-        await SetAuthHeaderAsync();
-        var response = await _httpClient.GetAsync(endpoint);
+        using var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
+        await AgregarAuthAsync(request);
+        var response = await _httpClient.SendAsync(request);
 
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
@@ -48,44 +49,68 @@ public class ApiClient
 
     public async Task<HttpResponseMessage> PostAsync<T>(string endpoint, T data)
     {
-        await SetAuthHeaderAsync();
-        var response = await _httpClient.PostAsJsonAsync(endpoint, data, ApiJson.Options);
+        using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(data, options: ApiJson.Options),
+        };
+        await AgregarAuthAsync(request);
+        var response = await _httpClient.SendAsync(request);
         await HandleIfUnauthorizedAsync(response);
         return response;
     }
 
     public async Task<HttpResponseMessage> PostContentAsync(string endpoint, HttpContent content)
     {
-        await SetAuthHeaderAsync();
-        // PostAsync directo: 'content' define su propio Content-Type (e.g., multipart/form-data)
-        var response = await _httpClient.PostAsync(endpoint, content);
+        // `content` define su propio Content-Type (e.g. multipart/form-data).
+        using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
+        {
+            Content = content,
+        };
+        await AgregarAuthAsync(request);
+        var response = await _httpClient.SendAsync(request);
         await HandleIfUnauthorizedAsync(response);
         return response;
     }
 
     public async Task<HttpResponseMessage> PutAsync<T>(string endpoint, T data)
     {
-        await SetAuthHeaderAsync();
-        var response = await _httpClient.PutAsJsonAsync(endpoint, data, ApiJson.Options);
+        using var request = new HttpRequestMessage(HttpMethod.Put, endpoint)
+        {
+            Content = JsonContent.Create(data, options: ApiJson.Options),
+        };
+        await AgregarAuthAsync(request);
+        var response = await _httpClient.SendAsync(request);
         await HandleIfUnauthorizedAsync(response);
         return response;
     }
 
     public async Task<HttpResponseMessage> DeleteAsync(string endpoint)
     {
-        await SetAuthHeaderAsync();
-        var response = await _httpClient.DeleteAsync(endpoint);
+        using var request = new HttpRequestMessage(HttpMethod.Delete, endpoint);
+        await AgregarAuthAsync(request);
+        var response = await _httpClient.SendAsync(request);
         await HandleIfUnauthorizedAsync(response);
         return response;
     }
 
-    private async Task SetAuthHeaderAsync()
+    /// <summary>
+    /// Pone el Bearer en ESTE request y no en el HttpClient compartido.
+    ///
+    /// Antes se escribía en `_httpClient.DefaultRequestHeaders`, que es estado
+    /// COMPARTIDO por todas las llamadas. Como el token se lee con `await`
+    /// (sale de ProtectedLocalStorage), dos llamadas concurrentes se
+    /// intercalan y una puede salir ANTES de que la otra escriba la cabecera
+    /// → 401 → la página muestra "no se encontró" sobre un dato que existe.
+    ///
+    /// Pasaba de verdad: la ficha del animal hace
+    /// `Task.WhenAll(Cargar(), CargarColumnas())`.
+    /// </summary>
+    private async Task AgregarAuthAsync(HttpRequestMessage request)
     {
         var token = await _authStateProvider.GetTokenAsync();
         if (!string.IsNullOrEmpty(token))
         {
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
     }
 
